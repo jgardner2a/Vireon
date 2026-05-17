@@ -1,32 +1,58 @@
 export default function Dashboard() {
   return (
-    <main style={{ padding: 40, fontFamily: "sans-serif" }}>
-      <h1>Vireon Dashboard</h1>
+    <div className="space-y-6">
 
-      <p>Welcome back.</p>
+      {/* HEADER */}
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-gray-600 mt-1">
+          Welcome back to Vireon.
+        </p>
+      </div>
 
-      <section style={{ marginTop: 30 }}>
-        <h2>Your Properties</h2>
-        <div style={{ padding: 20, border: "1px solid #ddd", marginTop: 10 }}>
-          No properties yet.
+      {/* STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">Properties</p>
+          <p className="text-2xl font-bold mt-2">0</p>
         </div>
-      </section>
 
-      <section style={{ marginTop: 30 }}>
-        <h2>Vireon IQ</h2>
-        <div style={{ padding: 20, border: "1px solid #ddd", marginTop: 10 }}>
-          Score: -- (not calculated yet)
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">Vireon IQ</p>
+          <p className="text-2xl font-bold mt-2">--</p>
         </div>
-      </section>
 
-      <section style={{ marginTop: 30 }}>
-        <h2>Actions</h2>
-        <ul>
-          <li>Upload property evidence</li>
-          <li>Create new report</li>
-          <li>View history</li>
-        </ul>
-      </section>
-    </main>
+        <div className="bg-white border rounded-xl p-5">
+          <p className="text-sm text-gray-500">Reports</p>
+          <p className="text-2xl font-bold mt-2">0</p>
+        </div>
+
+      </div>
+
+      {/* ACTIONS */}
+      <div className="bg-white border rounded-xl p-5">
+
+        <h2 className="font-semibold">Quick Actions</h2>
+
+        <div className="mt-4 space-y-2">
+
+          <button className="w-full text-left px-3 py-2 border rounded-lg hover:bg-gray-50">
+            Add Property
+          </button>
+
+          <button className="w-full text-left px-3 py-2 border rounded-lg hover:bg-gray-50">
+            Upload Evidence
+          </button>
+
+          <button className="w-full text-left px-3 py-2 border rounded-lg hover:bg-gray-50">
+            Generate Report
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
   );
 }
