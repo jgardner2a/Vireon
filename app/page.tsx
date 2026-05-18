@@ -1,8 +1,8 @@
-export default function Home() {
+export default function Places() {
   return (
-    <div>
-      <h1>Vireon Dashboard</h1>
-      <p>Welcome back.</p>
+    <div style={{ padding: 40 }}>
+      <h1>Places</h1>
+      <p>Search and explore apartments.</p>
     </div>
   );
 }
