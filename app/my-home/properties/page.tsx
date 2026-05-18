@@ -2,6 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  emptyState,
+  h1,
+  listCard,
+  listCardBody,
+  listCardTitle,
+  page,
+  pageHeader,
+  pageHeaderStack,
+  stack,
+  subtitle,
+} from "../ui";
 
 export default function Properties() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -12,43 +24,35 @@ export default function Properties() {
   }, []);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h1>Properties</h1>
-
-        <Link href="/my-home/properties/new">
-          <button style={button}>+ Add</button>
+    <div style={page}>
+      <header style={pageHeader}>
+        <div style={pageHeaderStack}>
+          <h1 style={h1}>Properties</h1>
+          <p style={subtitle}>Locations tied to your rental records</p>
+        </div>
+        <Link href="/my-home/properties/new" className="my-home-btn-primary">
+          + Add property
         </Link>
-      </div>
+      </header>
 
-      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={stack}>
         {properties.length === 0 ? (
-          <p style={{ color: "#888" }}>No properties yet.</p>
+          <div style={emptyState}>No properties yet.</div>
         ) : (
           properties.map((p) => (
-            <div key={p.id} style={card}>
-              <strong>{p.name}</strong>
-              <p style={{ margin: 0, color: "#666" }}>{p.address}</p>
-            </div>
+            <Link
+              key={p.id}
+              href={`/my-home/properties/${p.id}`}
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              <div className="my-home-list-card" style={listCard}>
+                <span style={listCardTitle}>{p.name}</span>
+                <p style={listCardBody}>{p.address}</p>
+              </div>
+            </Link>
           ))
         )}
       </div>
     </div>
   );
 }
-
-const card: React.CSSProperties = {
-  padding: 14,
-  border: "1px solid #eaeaea",
-  borderRadius: 10,
-  background: "#fff",
-};
-
-const button: React.CSSProperties = {
-  padding: "8px 12px",
-  borderRadius: 8,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-};

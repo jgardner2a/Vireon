@@ -2,6 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  field,
+  form,
+  formNarrow,
+  h1,
+  label,
+  page,
+  pageHeader,
+  pageHeaderStack,
+  subtitle,
+  input,
+} from "../../ui";
 
 export default function NewProperty() {
   const router = useRouter();
@@ -12,7 +24,6 @@ export default function NewProperty() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // TEMP (no backend yet)
     const existing = JSON.parse(localStorage.getItem("properties") || "[]");
 
     const newProperty = {
@@ -30,43 +41,49 @@ export default function NewProperty() {
   };
 
   return (
-    <div style={{ maxWidth: 500 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}>Add Property</h1>
+    <div style={{ ...page, ...formNarrow }}>
+      <header style={pageHeader}>
+        <div style={pageHeaderStack}>
+          <h1 style={h1}>Add property</h1>
+          <p style={subtitle}>Save a rental location for issues and evidence</p>
+        </div>
+      </header>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input
-          placeholder="Property name (e.g. Downtown Apartment)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={input}
-        />
+      <form onSubmit={handleSubmit} style={form}>
+        <div style={field}>
+          <label style={label} htmlFor="property-name">
+            Property name
+          </label>
+          <input
+            id="property-name"
+            className="my-home-input"
+            placeholder="e.g. Downtown Apartment"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={input}
+            required
+          />
+        </div>
 
-        <input
-          placeholder="Address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          style={input}
-        />
+        <div style={field}>
+          <label style={label} htmlFor="property-address">
+            Address
+          </label>
+          <input
+            id="property-address"
+            className="my-home-input"
+            placeholder="Street, city, state"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            style={input}
+            required
+          />
+        </div>
 
-        <button style={button} type="submit">
-          Save Property
+        <button type="submit" className="my-home-btn-primary">
+          Save property
         </button>
       </form>
     </div>
   );
 }
-
-const input: React.CSSProperties = {
-  padding: 10,
-  border: "1px solid #ddd",
-  borderRadius: 8,
-};
-
-const button: React.CSSProperties = {
-  padding: 10,
-  borderRadius: 8,
-  border: "none",
-  background: "#111",
-  color: "white",
-  cursor: "pointer",
-};

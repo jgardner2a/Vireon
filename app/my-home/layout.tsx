@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import "./my-home.css";
 
 export default function MyHomeLayout({
   children,
@@ -10,40 +11,54 @@ export default function MyHomeLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
+
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const auth = localStorage.getItem("auth");
 
     if (!auth) {
-      router.push("/login");
+      window.location.href = "/login";
+    } else {
+      try {
+        const parsed = JSON.parse(auth);
+        setEmail(parsed.email ?? null);
+      } catch {
+        setEmail(null);
+      }
+      setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   const navItems = [
     { href: "/my-home", label: "Dashboard" },
     { href: "/my-home/properties", label: "Properties" },
     { href: "/my-home/issues", label: "Issues" },
     { href: "/my-home/gallery", label: "Gallery" },
+    { href: "/my-home/vault", label: "Vault" },
   ];
 
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#fafafa" }}>
-      {/* SIDEBAR */}
-      <aside
-        style={{
-          width: 260,
-          padding: 24,
-          borderRight: "1px solid #eaeaea",
-          background: "#fff",
-        }}
-      >
-        <h2 style={{ fontSize: 18, fontWeight: 700 }}>Vireon</h2>
-        <p style={{ fontSize: 12, color: "#666", marginBottom: 24 }}>
-          Rental Intelligence System
-        </p>
+  if (loading) {
+    return <div className="my-home-loading">Loading…</div>;
+  }
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+  return (
+    <div
+      className="my-home-shell"
+      style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}
+    >
+      <aside className="my-home-sidebar">
+        <div className="my-home-brand">
+          <div className="my-home-brand-mark">V</div>
+          <div>
+            <p className="my-home-brand-name">Vireon</p>
+            <p className="my-home-brand-tag">Rental intelligence</p>
+          </div>
+        </div>
+
+        <p className="my-home-nav-label">Menu</p>
+        <nav className="my-home-nav">
           {navItems.map((item) => {
             const active =
               item.href === "/my-home"
@@ -54,26 +69,34 @@ export default function MyHomeLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 8,
-                  textDecoration: "none",
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: active ? "#111" : "#666",
-                  background: active ? "#f2f4f7" : "transparent",
-                  border: active ? "1px solid #e5e7eb" : "1px solid transparent",
-                }}
+                className={
+                  active
+                    ? "my-home-nav-link my-home-nav-link--active"
+                    : "my-home-nav-link"
+                }
               >
                 {item.label}
               </Link>
             );
           })}
         </nav>
+
+        <div className="my-home-sidebar-footer">
+          {email && <p className="my-home-user-email">{email}</p>}
+          <button
+            type="button"
+            className="my-home-btn-ghost"
+            onClick={() => {
+              localStorage.removeItem("auth");
+              window.location.href = "/login";
+            }}
+          >
+            Log out
+          </button>
+        </div>
       </aside>
 
-      {/* MAIN */}
-      <main style={{ flex: 1, padding: 32 }}>{children}</main>
+      <main className="my-home-main">{children}</main>
     </div>
   );
 }

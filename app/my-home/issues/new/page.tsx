@@ -1,21 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { DEFAULT_ISSUE_STATUS } from "../../issueStatus";
+import {
+  field,
+  form,
+  formNarrow,
+  h1,
+  label,
+  page,
+  pageHeader,
+  pageHeaderStack,
+  subtitle,
+  input,
+  textarea,
+} from "../../ui";
 
 export default function NewIssue() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [propertyId, setPropertyId] = useState("");
 
-  const [properties, setProperties] = useState<any[]>([]);
-
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("properties") || "[]");
-    setProperties(data);
-  }, []);
+    const fromUrl = searchParams.get("propertyId");
+    if (fromUrl) setPropertyId(fromUrl);
+  }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +40,8 @@ export default function NewIssue() {
       title,
       description,
       propertyId,
+      status: DEFAULT_ISSUE_STATUS,
+      images: [],
       createdAt: new Date().toISOString(),
     };
 
@@ -35,72 +50,70 @@ export default function NewIssue() {
       JSON.stringify([...existing, newIssue])
     );
 
-    router.push("/my-home/issues");
+    router.push(
+      propertyId ? `/my-home/properties/${propertyId}` : "/my-home/issues"
+    );
   };
 
   return (
-    <div style={{ maxWidth: 500 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}>Log Issue</h1>
+    <div style={{ ...page, ...formNarrow }}>
+      <header style={pageHeader}>
+        <div style={pageHeaderStack}>
+          <h1 style={h1}>Log issue</h1>
+          <p style={subtitle}>Record a problem tied to a property</p>
+        </div>
+      </header>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: 12 }}
-      >
-        {/* PROPERTY SELECT */}
-        <select
-          value={propertyId}
-          onChange={(e) => setPropertyId(e.target.value)}
-          style={input}
-          required
-        >
-          <option value="">Select Property</option>
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+      <form onSubmit={handleSubmit} style={form}>
+        <div style={field}>
+          <label style={label} htmlFor="issue-title">
+            Title
+          </label>
+          <input
+            id="issue-title"
+            className="my-home-input"
+            placeholder="Brief summary"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={input}
+            required
+          />
+        </div>
 
-        <input
-          placeholder="Issue title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={input}
-        />
+        <div style={field}>
+          <label style={label} htmlFor="issue-description">
+            Description
+          </label>
+          <textarea
+            id="issue-description"
+            className="my-home-textarea"
+            placeholder="What happened? Include details for your records."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            style={textarea}
+            required
+          />
+        </div>
 
-        <textarea
-          placeholder="Describe the issue"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={textarea}
-        />
+        <div style={field}>
+          <label style={label} htmlFor="issue-property-id">
+            Property ID
+          </label>
+          <input
+            id="issue-property-id"
+            className="my-home-input"
+            placeholder="ID from your properties list"
+            value={propertyId}
+            onChange={(e) => setPropertyId(e.target.value)}
+            style={input}
+            required
+          />
+        </div>
 
-        <button type="submit" style={button}>
-          Save Issue
+        <button type="submit" className="my-home-btn-primary">
+          Save issue
         </button>
       </form>
     </div>
   );
 }
-
-const input: React.CSSProperties = {
-  padding: 10,
-  border: "1px solid #ddd",
-  borderRadius: 8,
-};
-
-const textarea: React.CSSProperties = {
-  padding: 10,
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  minHeight: 120,
-};
-
-const button: React.CSSProperties = {
-  padding: 10,
-  borderRadius: 8,
-  border: "none",
-  background: "#111",
-  color: "white",
-  cursor: "pointer",
-};

@@ -1,6 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  emptyState,
+  galleryGrid,
+  galleryImage,
+  h1,
+  page,
+  pageHeader,
+  pageHeaderStack,
+  subtitle,
+} from "../ui";
 
 export default function Gallery() {
   const [images, setImages] = useState<any[]>([]);
@@ -11,65 +21,52 @@ export default function Gallery() {
   }, []);
 
   return (
-    <div>
-      {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h1>Gallery</h1>
+    <div style={page}>
+      <header style={pageHeader}>
+        <div style={pageHeaderStack}>
+          <h1 style={h1}>Gallery</h1>
+          <p style={subtitle}>Uploaded evidence images</p>
+        </div>
+      </header>
+
+      <div className="my-home-upload-zone">
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+
+            const readers = files.map((file) => {
+              return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+              });
+            });
+
+            Promise.all(readers).then((results) => {
+              const existing = JSON.parse(
+                localStorage.getItem("gallery") || "[]"
+              );
+
+              const updated = [...existing, ...results];
+
+              localStorage.setItem("gallery", JSON.stringify(updated));
+              setImages(updated);
+            });
+          }}
+        />
       </div>
 
-      {/* UPLOAD INPUT */}
-      <input
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-
-          const readers = files.map((file) => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result);
-              reader.readAsDataURL(file);
-            });
-          });
-
-          Promise.all(readers).then((results) => {
-            const existing = JSON.parse(
-              localStorage.getItem("gallery") || "[]"
-            );
-
-            const updated = [...existing, ...results];
-
-            localStorage.setItem("gallery", JSON.stringify(updated));
-            setImages(updated);
-          });
-        }}
-      />
-
-      {/* GRID */}
-      <div
-        style={{
-          marginTop: 20,
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 12,
-        }}
-      >
+      <div style={galleryGrid}>
         {images.length === 0 ? (
-          <p style={{ color: "#888" }}>No images uploaded yet.</p>
+          <div style={{ ...emptyState, gridColumn: "1 / -1" }}>
+            No images uploaded yet.
+          </div>
         ) : (
           images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              style={{
-                width: "100%",
-                height: 160,
-                objectFit: "cover",
-                borderRadius: 10,
-                border: "1px solid #eee",
-              }}
-            />
+            <img key={i} src={img} alt="" style={galleryImage} />
           ))
         )}
       </div>

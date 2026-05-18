@@ -3,10 +3,28 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import {
+  IssueStatusBadge,
+  normalizeIssueStatus,
+} from "../../issueStatus";
+import {
+  card,
+  emptyState,
+  h1,
+  h2,
+  listCard,
+  listCardBody,
+  listCardTitle,
+  meta,
+  page,
+  section,
+  subtitle,
+} from "../../ui";
 
 export default function PropertyDetail() {
   const { id } = useParams();
 
+  const [loading, setLoading] = useState(true);
   const [property, setProperty] = useState<any>(null);
   const [issues, setIssues] = useState<any[]>([]);
 
@@ -18,54 +36,121 @@ export default function PropertyDetail() {
       (p: any) => String(p.id) === String(id)
     );
 
-    const relatedIssues = allIssues.filter(
-      (i: any) => String(i.propertyId) === String(id)
-    );
+    const relatedIssues = allIssues
+      .filter((i: any) => String(i.propertyId) === String(id))
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
 
-    setProperty(foundProperty);
+    setProperty(foundProperty ?? null);
     setIssues(relatedIssues);
+    setLoading(false);
   }, [id]);
 
-  if (!property) {
+  if (loading) {
     return (
-      <div>
-        <h1>Property not found</h1>
-        <p>This property may not exist anymore.</p>
+      <div style={page}>
+        <p style={meta}>Loading property…</p>
       </div>
     );
   }
 
-  return (
-    <div>
-      {/* HEADER */}
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700 }}>
-          {property.name}
-        </h1>
-        <p style={{ color: "#666" }}>{property.address}</p>
+  if (!property) {
+    return (
+      <div style={page}>
+        <Link
+          href="/my-home/properties"
+          style={{ fontSize: 14, color: "#64748b", textDecoration: "none" }}
+        >
+          ← Back to properties
+        </Link>
+        <h1 style={{ ...h1, marginTop: 24 }}>Property not found</h1>
+        <p style={subtitle}>This property may not exist anymore.</p>
       </div>
+    );
+  }
 
-      {/* ACTION */}
-      <Link href="/my-home/issues/new">
-        <button style={button}>+ Add Issue</button>
+  const openCount = issues.filter(
+    (i) => normalizeIssueStatus(i.status) === "Open"
+  ).length;
+
+  return (
+    <div style={page}>
+      <Link
+        href="/my-home/properties"
+        style={{ fontSize: 14, color: "#64748b", textDecoration: "none" }}
+      >
+        ← Back to properties
       </Link>
 
-      {/* ISSUES SECTION */}
-      <div style={{ marginTop: 30 }}>
-        <h2 style={{ fontSize: 18 }}>Issues for this property</h2>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 24,
+          marginTop: 20,
+          marginBottom: 32,
+        }}
+      >
+        <div>
+          <h1 style={h1}>{property.name}</h1>
+          <p style={subtitle}>{property.address}</p>
+        </div>
+        <Link
+          href={`/my-home/issues/new?propertyId=${property.id}`}
+          className="my-home-btn-primary"
+        >
+          + Log issue
+        </Link>
+      </header>
 
-        <div
+      <div style={{ ...card, marginBottom: 32 }}>
+        <h2 style={{ ...h2, marginBottom: 12 }}>Property details</h2>
+        <dl
           style={{
-            marginTop: 12,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
+            margin: 0,
+            display: "grid",
+            gridTemplateColumns: "120px 1fr",
+            gap: "10px 16px",
+            fontSize: 14,
           }}
         >
+          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>Name</dt>
+          <dd style={{ margin: 0, color: "#0f172a" }}>{property.name}</dd>
+          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>
+            Address
+          </dt>
+          <dd style={{ margin: 0, color: "#0f172a" }}>{property.address}</dd>
+          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>ID</dt>
+          <dd style={{ margin: 0, color: "#0f172a", fontFamily: "monospace" }}>
+            {property.id}
+          </dd>
+          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>
+            Issues
+          </dt>
+          <dd style={{ margin: 0, color: "#0f172a" }}>
+            {issues.length} total
+            {openCount > 0 ? ` · ${openCount} open` : ""}
+          </dd>
+        </dl>
+      </div>
+
+      <section style={section}>
+        <h2 style={h2}>Issues</h2>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {issues.length === 0 ? (
-            <p style={{ color: "#888" }}>
-              No issues logged for this property.
-            </p>
+            <div style={emptyState}>
+              No issues logged for this property yet.{" "}
+              <Link
+                href={`/my-home/issues/new?propertyId=${property.id}`}
+                style={{ color: "#0f172a", fontWeight: 500 }}
+              >
+                Log the first issue
+              </Link>
+            </div>
           ) : (
             issues.map((issue) => (
               <Link
@@ -73,14 +158,22 @@ export default function PropertyDetail() {
                 href={`/my-home/issues/${issue.id}`}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <div style={card}>
-                  <strong>{issue.title}</strong>
-
-                  <p style={{ margin: 0, color: "#666" }}>
-                    {issue.description}
-                  </p>
-
-                  <p style={{ margin: 0, fontSize: 12, color: "#999" }}>
+                <div className="my-home-list-card" style={listCard}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 12,
+                    }}
+                  >
+                    <span style={listCardTitle}>{issue.title}</span>
+                    <IssueStatusBadge
+                      status={normalizeIssueStatus(issue.status)}
+                    />
+                  </div>
+                  <p style={listCardBody}>{issue.description}</p>
+                  <p style={meta}>
                     {new Date(issue.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -88,23 +181,7 @@ export default function PropertyDetail() {
             ))
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
-
-const card: React.CSSProperties = {
-  padding: 14,
-  border: "1px solid #eaeaea",
-  borderRadius: 10,
-  background: "#fff",
-};
-
-const button: React.CSSProperties = {
-  padding: "8px 12px",
-  borderRadius: 8,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-};

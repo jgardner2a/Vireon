@@ -2,6 +2,23 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  IssueStatusBadge,
+  normalizeIssueStatus,
+} from "../issueStatus";
+import {
+  emptyState,
+  h1,
+  listCard,
+  listCardBody,
+  listCardTitle,
+  meta,
+  page,
+  pageHeader,
+  pageHeaderStack,
+  stack,
+  subtitle,
+} from "../ui";
 
 export default function Issues() {
   const [issues, setIssues] = useState<any[]>([]);
@@ -16,22 +33,24 @@ export default function Issues() {
   }, []);
 
   const getPropertyName = (id: string) => {
-    return properties.find((p) => p.id == id)?.name || "Unknown Property";
+    return properties.find((p) => p.id == id)?.name || "Unknown property";
   };
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h1>Issues</h1>
-
-        <Link href="/my-home/issues/new">
-          <button style={button}>+ Log Issue</button>
+    <div style={page}>
+      <header style={pageHeader}>
+        <div style={pageHeaderStack}>
+          <h1 style={h1}>Issues</h1>
+          <p style={subtitle}>Problems logged across your properties</p>
+        </div>
+        <Link href="/my-home/issues/new" className="my-home-btn-primary">
+          + Log issue
         </Link>
-      </div>
+      </header>
 
-      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={stack}>
         {issues.length === 0 ? (
-          <p style={{ color: "#888" }}>No issues logged yet.</p>
+          <div style={emptyState}>No issues logged yet.</div>
         ) : (
           issues.map((issue) => (
             <Link
@@ -39,18 +58,23 @@ export default function Issues() {
               href={`/my-home/issues/${issue.id}`}
               style={{ textDecoration: "none", color: "inherit" }}
             >
-              <div style={card}>
-                <strong>{issue.title}</strong>
-
-                <p style={{ margin: 0, color: "#666" }}>
-                  {issue.description}
-                </p>
-
-                <p style={{ margin: 0, fontSize: 12, color: "#888" }}>
-                  Property: {getPropertyName(issue.propertyId)}
-                </p>
-
-                <p style={{ margin: 0, fontSize: 12, color: "#999" }}>
+              <div className="my-home-list-card" style={listCard}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
+                  <span style={listCardTitle}>{issue.title}</span>
+                  <IssueStatusBadge
+                    status={normalizeIssueStatus(issue.status)}
+                  />
+                </div>
+                <p style={listCardBody}>{issue.description}</p>
+                <p style={meta}>Property: {getPropertyName(issue.propertyId)}</p>
+                <p style={meta}>
                   {new Date(issue.createdAt).toLocaleString()}
                 </p>
               </div>
@@ -61,19 +85,3 @@ export default function Issues() {
     </div>
   );
 }
-
-const card: React.CSSProperties = {
-  padding: 14,
-  border: "1px solid #eaeaea",
-  borderRadius: 10,
-  background: "#fff",
-};
-
-const button: React.CSSProperties = {
-  padding: "8px 12px",
-  borderRadius: 8,
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-};
