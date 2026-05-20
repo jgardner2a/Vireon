@@ -1,90 +1,123 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   ISSUE_STATUSES,
   IssueStatusBadge,
-  normalizeIssueStatus,
-  saveIssueStatus,
   type IssueStatus,
 } from "../../issueStatus";
 import {
-  card,
-  emptyState,
-  field,
-  h1,
-  label,
-  meta,
-  page,
-  subtitle,
-  input,
-} from "../../ui";
+  getIssueById,
+  getPropertyForIssue,
+  updateIssueStatus,
+  type Issue,
+} from "@/lib/issuesStore";
+import { IssueLinkedEvidence } from "../IssueLinkedEvidence";
 
 export default function IssueDetail() {
   const { id } = useParams();
-  const [issue, setIssue] = useState<any>(null);
+  const [issue, setIssue] = useState<Issue | null | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const issues = JSON.parse(localStorage.getItem("issues") || "[]");
-    const found = issues.find((i: any) => String(i.id) === String(id));
-    if (found) {
-      setIssue({ ...found, status: normalizeIssueStatus(found.status) });
-    } else {
-      setIssue(null);
-    }
+    const found = getIssueById(String(id));
+    setIssue(found ?? null);
   }, [id]);
 
-  const handleStatusChange = (status: IssueStatus) => {
+  const handleStatusChange = async (status: IssueStatus) => {
     if (!issue) return;
-    saveIssueStatus(issue.id, status);
-    setIssue({ ...issue, status });
+
+    const result = await updateIssueStatus(issue.id, status);
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    setError(null);
+    setIssue(result.issue);
   };
 
-  if (!issue) {
+  if (issue === undefined) {
     return (
-      <div style={page}>
-        <h1 style={h1}>Issue not found</h1>
-        <p style={subtitle}>This issue may have been removed.</p>
+      <div className="my-home-card my-home-card--flat">
+        <p className="my-home-text-muted">Loading issue…</p>
       </div>
     );
   }
 
-  const status = normalizeIssueStatus(issue.status);
+  if (!issue) {
+    return (
+      <>
+        <Link href="/my-home/issues" className="my-home-back-link">
+          ← Back to issues
+        </Link>
+        <header className="my-home-page-header my-home-page-header--with-back">
+          <div>
+            <h1 className="my-home-title">Issue not found</h1>
+            <p className="my-home-subtitle">
+              This issue may have been removed.
+            </p>
+          </div>
+        </header>
+      </>
+    );
+  }
+
+  const property = getPropertyForIssue(issue);
 
   return (
-    <div style={page}>
-      <header style={{ marginBottom: 24 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 16,
-            flexWrap: "wrap",
-          }}
-        >
-          <h1 style={h1}>{issue.title}</h1>
-          <IssueStatusBadge status={status} />
+    <>
+      <Link href="/my-home/issues" className="my-home-back-link">
+        ← Back to issues
+      </Link>
+
+      <header className="my-home-page-header my-home-page-header--with-back">
+        <div>
+          <div className="my-home-row-between">
+            <h1 className="my-home-title">{issue.title}</h1>
+            <IssueStatusBadge status={issue.status} />
+          </div>
+          <p className="my-home-subtitle" style={{ marginTop: 12 }}>
+            Logged {new Date(issue.createdAt).toLocaleString()}
+          </p>
         </div>
-        <p style={meta}>
-          Logged {new Date(issue.createdAt).toLocaleString()}
-        </p>
       </header>
 
-      <div style={{ ...card, marginBottom: 24 }}>
-        <div style={field}>
-          <label style={label} htmlFor="issue-status">
-            Status
+      <section className="my-home-card" style={{ marginBottom: 16 }}>
+        <h2 className="my-home-card-title">Property</h2>
+        {property ? (
+          <p className="my-home-body-text">
+            <Link href={`/my-home/properties/${property.id}`}>
+              {property.name}
+            </Link>
+            <br />
+            <span className="my-home-text-muted">{property.address}</span>
+          </p>
+        ) : (
+          <p className="my-home-text-muted">Unknown property</p>
+        )}
+      </section>
+
+      <section className="my-home-card" style={{ marginBottom: 16 }}>
+        <h2 className="my-home-card-title">Status</h2>
+        {error ? (
+          <p className="my-home-form-error" role="alert" style={{ marginBottom: 12 }}>
+            {error}
+          </p>
+        ) : null}
+        <div className="my-home-field">
+          <label className="my-home-label" htmlFor="issue-status">
+            Update status
           </label>
           <select
             id="issue-status"
             className="my-home-input"
-            value={status}
+            value={issue.status}
             onChange={(e) =>
               handleStatusChange(e.target.value as IssueStatus)
             }
-            style={input}
           >
             {ISSUE_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -93,26 +126,18 @@ export default function IssueDetail() {
             ))}
           </select>
         </div>
-      </div>
+      </section>
 
-      <div style={card}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: "#475569",
-          }}
-        >
-          {issue.description}
-        </p>
-      </div>
+      <section className="my-home-card" style={{ marginBottom: 16 }}>
+        <h2 className="my-home-card-title">Description</h2>
+        <p className="my-home-body-text">{issue.description}</p>
+      </section>
 
-      {issue.images?.length > 0 ? null : (
-        <div style={{ ...emptyState, marginTop: 24 }}>
-          No photos attached to this issue yet.
-        </div>
-      )}
-    </div>
+      <IssueLinkedEvidence
+        targetType="issue"
+        targetId={issue.id}
+        propertyId={issue.propertyId}
+      />
+    </>
   );
 }

@@ -3,122 +3,198 @@
 import Link from "next/link";
 import { IssueStatusBadge } from "../issueStatus";
 import { card, listCardBody, listCardTitle, meta } from "../ui";
-import { formatVaultDate } from "./buildVault";
-import type { VaultEntry, VaultPropertyFeed } from "./types";
+import { VaultEntryLinks } from "./VaultEntryLinks";
+import { VaultEvidenceRelationshipInline } from "./VaultEvidenceRelationshipInline";
+import { VaultFolderEvidenceSection } from "./VaultFolderEvidenceSection";
+import {
+  formatVaultDate,
+  partitionFeedEntries,
+  type VaultEntry,
+  type VaultPropertyFeed,
+} from "@/lib/evidence/vault";
 
-export function VaultTimeline({ feeds }: { feeds: VaultPropertyFeed[] }) {
+type VaultTimelineProps = {
+  feeds: VaultPropertyFeed[];
+  showCrossLinks?: boolean;
+};
+
+export function VaultTimeline({
+  feeds,
+  showCrossLinks = false,
+}: VaultTimelineProps) {
   if (feeds.length === 0) {
     return null;
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+    <div className="vault-timeline-root">
       {feeds.map((feed) => (
-        <PropertyFeed key={feed.propertyId ?? "unlinked"} feed={feed} />
+        <PropertyFeed
+          key={feed.propertyId ?? "unlinked"}
+          feed={feed}
+          showCrossLinks={showCrossLinks}
+        />
       ))}
     </div>
   );
 }
 
-function PropertyFeed({ feed }: { feed: VaultPropertyFeed }) {
+function PropertyFeed({
+  feed,
+  showCrossLinks,
+}: {
+  feed: VaultPropertyFeed;
+  showCrossLinks: boolean;
+}) {
+  const { timeline, gallery } = partitionFeedEntries(feed.entries);
+
   return (
-    <section>
-      <header style={{ marginBottom: 20 }}>
+    <section className="vault-timeline-feed">
+      <header className="vault-timeline-feed__header">
         {feed.propertyId ? (
           <Link
             href={`/my-home/properties/${feed.propertyId}`}
             className="vault-feed-title"
-            style={{ textDecoration: "none", color: "inherit", display: "block" }}
           >
             {feed.propertyName}
           </Link>
         ) : (
           <h2 className="vault-feed-title">{feed.propertyName}</h2>
         )}
-        {feed.propertyAddress && (
+        {feed.propertyAddress ? (
           <p className="vault-feed-subtitle">{feed.propertyAddress}</p>
-        )}
-        <p style={{ ...meta, marginTop: 6 }}>
+        ) : null}
+        <p className="my-home-text-muted" style={{ marginTop: 6 }}>
           {feed.entries.length} vault{" "}
           {feed.entries.length === 1 ? "entry" : "entries"}
+          {gallery.length > 0
+            ? ` · ${gallery.length} gallery item${gallery.length === 1 ? "" : "s"} in folders`
+            : ""}
         </p>
       </header>
 
-      <ol className="vault-timeline">
-        {feed.entries.map((entry) => (
-          <li key={entry.id} className="vault-timeline-item">
-            <VaultTimelineEntry entry={entry} />
-          </li>
-        ))}
-      </ol>
+      {timeline.length > 0 ? (
+        <ol className="vault-timeline">
+          {timeline.map((entry) => (
+            <li key={entry.id} className="vault-timeline-item">
+              <VaultTimelineEntry
+                entry={entry}
+                propertyEntries={feed.entries}
+                showCrossLinks={showCrossLinks}
+              />
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      <VaultFolderEvidenceSection
+        galleryEntries={gallery}
+        propertyEntries={feed.entries}
+        showCrossLinks={showCrossLinks}
+      />
     </section>
   );
 }
 
-function VaultTimelineEntry({ entry }: { entry: VaultEntry }) {
+function VaultTimelineEntry({
+  entry,
+  propertyEntries,
+  showCrossLinks,
+}: {
+  entry: VaultEntry;
+  propertyEntries: VaultEntry[];
+  showCrossLinks: boolean;
+}) {
   const dateLabel = formatVaultDate(entry.occurredAt);
+
+  if (entry.type === "lease") {
+    return (
+      <div className="vault-timeline-card vault-timeline-card--lease" style={card}>
+        <div className="vault-entry-header">
+          <span className="vault-entry-type vault-entry-type--lease">Lease</span>
+          <time className="my-home-text-muted" dateTime={entry.occurredAt}>
+            {dateLabel}
+          </time>
+        </div>
+        <h3 className="vault-lease-title">{entry.title}</h3>
+        <p className="my-home-body-text" style={{ marginTop: 8 }}>
+          {entry.startDate}
+          {entry.endDate ? ` → ${entry.endDate}` : " → ongoing"}
+        </p>
+        {showCrossLinks ? (
+          <VaultEntryLinks entry={entry} propertyEntries={propertyEntries} />
+        ) : null}
+      </div>
+    );
+  }
 
   if (entry.type === "issue") {
     return (
       <div className="vault-timeline-card" style={card}>
         <div className="vault-entry-header">
           <span className="vault-entry-type">Issue</span>
-          <time style={meta} dateTime={entry.occurredAt}>
+          <time className="my-home-text-muted" dateTime={entry.occurredAt}>
             {dateLabel}
           </time>
         </div>
         <Link
           href={`/my-home/issues/${entry.issueId}`}
-          style={{ textDecoration: "none", color: "inherit" }}
+          className="vault-timeline-issue-link"
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 12,
-              marginTop: 10,
-            }}
-          >
+          <div className="my-home-row-between" style={{ marginTop: 10 }}>
             <span style={listCardTitle}>{entry.title}</span>
             <IssueStatusBadge status={entry.status} />
           </div>
           <p style={{ ...listCardBody, marginTop: 8 }}>{entry.description}</p>
         </Link>
-        {entry.imageCount > 0 && (
-          <p style={{ ...meta, marginTop: 10 }}>
-            {entry.imageCount} attached{" "}
-            {entry.imageCount === 1 ? "image" : "images"}
+        {entry.imageCount > 0 ? (
+          <p className="my-home-text-muted" style={{ marginTop: 10 }}>
+            {entry.imageCount} linked gallery{" "}
+            {entry.imageCount === 1 ? "item" : "items"}
           </p>
-        )}
+        ) : null}
+        {showCrossLinks ? (
+          <VaultEntryLinks entry={entry} propertyEntries={propertyEntries} />
+        ) : null}
       </div>
     );
   }
 
-  const issueLink = entry.issueId ? (
-    <Link
-      href={`/my-home/issues/${entry.issueId}`}
-      style={{ fontSize: 13, color: "#475569", textDecoration: "none" }}
-    >
-      View issue →
-    </Link>
-  ) : null;
+  if (entry.type === "image" && entry.imageSource === "gallery") {
+    return null;
+  }
 
   return (
     <div className="vault-timeline-card" style={card}>
       <div className="vault-entry-header">
-        <span className="vault-entry-type vault-entry-type--image">Image</span>
-        <time style={meta} dateTime={entry.occurredAt}>
+        <span className="vault-entry-type vault-entry-type--image">
+          {entry.imageUrl.startsWith("data:video/") ? "Video" : "Media"}
+        </span>
+        <time className="my-home-text-muted" dateTime={entry.occurredAt}>
           {dateLabel}
         </time>
       </div>
       <p style={{ ...meta, margin: "10px 0 12px" }}>{entry.caption}</p>
-      <img
-        src={entry.imageUrl}
-        alt=""
-        className="vault-timeline-thumb"
-      />
-      {issueLink && <div style={{ marginTop: 10 }}>{issueLink}</div>}
+      <div style={{ marginBottom: 12 }}>
+        <VaultEvidenceRelationshipInline
+          entry={entry}
+          className="vault-relationships__edge-inline"
+          ifEmpty={null}
+        />
+      </div>
+      {entry.imageUrl.startsWith("data:video/") ? (
+        <video
+          src={entry.imageUrl}
+          className="vault-timeline-thumb"
+          controls
+          preload="metadata"
+        />
+      ) : (
+        <img src={entry.imageUrl} alt="" className="vault-timeline-thumb" />
+      )}
+      {showCrossLinks ? (
+        <VaultEntryLinks entry={entry} propertyEntries={propertyEntries} />
+      ) : null}
     </div>
   );
 }

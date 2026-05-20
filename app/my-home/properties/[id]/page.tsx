@@ -3,146 +3,186 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { IssueStatusBadge } from "../../issueStatus";
+import { listIssuesByPropertyId, type Issue } from "@/lib/issuesStore";
+import { getLeaseByPropertyId } from "@/lib/leasesStore";
+import { bootstrapMyHomeData } from "@/lib/myHomeBootstrap";
 import {
-  IssueStatusBadge,
-  normalizeIssueStatus,
-} from "../../issueStatus";
+  PROPERTY_RESIDENCE_CURRENT,
+} from "@/lib/property/residenceStatus";
+import { isPro } from "@/lib/subscription/subscription";
 import {
-  card,
-  emptyState,
-  h1,
-  h2,
-  listCard,
-  listCardBody,
-  listCardTitle,
-  meta,
-  page,
-  section,
-  subtitle,
-} from "../../ui";
-
+  useProfileId,
+  useSubscriptionPlan,
+} from "@/lib/subscription/useSubscriptionPlan";
+import {
+  listProperties,
+  setCurrentProperty,
+  type Property,
+} from "@/lib/propertiesStore";
 export default function PropertyDetail() {
   const { id } = useParams();
 
   const [loading, setLoading] = useState(true);
-  const [property, setProperty] = useState<any>(null);
-  const [issues, setIssues] = useState<any[]>([]);
+  const [property, setProperty] = useState<Property | null>(null);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [leaseTitle, setLeaseTitle] = useState<string | null>(null);
+  const [switching, setSwitching] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const profileId = useProfileId();
+  const { plan } = useSubscriptionPlan(profileId);
+  const pro = plan ? isPro(plan) : false;
 
   useEffect(() => {
-    const properties = JSON.parse(localStorage.getItem("properties") || "[]");
-    const allIssues = JSON.parse(localStorage.getItem("issues") || "[]");
+    void bootstrapMyHomeData().then(() => {
+    const propertyId = String(id);
+    const foundProperty =
+      listProperties().find((p) => String(p.id) === propertyId) ?? null;
 
-    const foundProperty = properties.find(
-      (p: any) => String(p.id) === String(id)
+    setProperty(foundProperty);
+    setIssues(
+      foundProperty ? listIssuesByPropertyId(foundProperty.id) : []
     );
-
-    const relatedIssues = allIssues
-      .filter((i: any) => String(i.propertyId) === String(id))
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-
-    setProperty(foundProperty ?? null);
-    setIssues(relatedIssues);
+    const lease = foundProperty
+      ? getLeaseByPropertyId(foundProperty.id)
+      : undefined;
+    setLeaseTitle(lease?.title ?? null);
     setLoading(false);
+    });
   }, [id]);
 
   if (loading) {
     return (
-      <div style={page}>
-        <p style={meta}>Loading property…</p>
+      <div className="my-home-card my-home-card--flat">
+        <p className="my-home-text-muted">Loading property…</p>
       </div>
     );
   }
 
   if (!property) {
     return (
-      <div style={page}>
-        <Link
-          href="/my-home/properties"
-          style={{ fontSize: 14, color: "#64748b", textDecoration: "none" }}
-        >
+      <>
+        <Link href="/my-home/properties" className="my-home-back-link">
           ← Back to properties
         </Link>
-        <h1 style={{ ...h1, marginTop: 24 }}>Property not found</h1>
-        <p style={subtitle}>This property may not exist anymore.</p>
-      </div>
+        <header
+          className="my-home-page-header my-home-page-header--with-back"
+        >
+          <div>
+            <h1 className="my-home-title">Property not found</h1>
+            <p className="my-home-subtitle">
+              This property may not exist anymore.
+            </p>
+          </div>
+        </header>
+      </>
     );
   }
 
-  const openCount = issues.filter(
-    (i) => normalizeIssueStatus(i.status) === "Open"
-  ).length;
+  const openCount = issues.filter((i) => i.status === "Open").length;
 
   return (
-    <div style={page}>
-      <Link
-        href="/my-home/properties"
-        style={{ fontSize: 14, color: "#64748b", textDecoration: "none" }}
-      >
+    <>
+      <Link href="/my-home/properties" className="my-home-back-link">
         ← Back to properties
       </Link>
 
-      <header
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 24,
-          marginTop: 20,
-          marginBottom: 32,
-        }}
-      >
+      <header className="my-home-page-header my-home-page-header--with-back">
         <div>
-          <h1 style={h1}>{property.name}</h1>
-          <p style={subtitle}>{property.address}</p>
+          <h1 className="my-home-title">{property.name}</h1>
+          <p className="my-home-subtitle">{property.address}</p>
+          <p className="my-home-text-muted" style={{ marginTop: 8 }}>
+            {property.residenceStatus === PROPERTY_RESIDENCE_CURRENT
+              ? "Current home"
+              : "Previous rental"}
+          </p>
+          {actionError ? (
+            <p className="my-home-form-error" role="alert" style={{ marginTop: 8 }}>
+              {actionError}
+            </p>
+          ) : null}
         </div>
-        <Link
-          href={`/my-home/issues/new?propertyId=${property.id}`}
-          className="my-home-btn-primary"
-        >
-          + Log issue
-        </Link>
-      </header>
-
-      <div style={{ ...card, marginBottom: 32 }}>
-        <h2 style={{ ...h2, marginBottom: 12 }}>Property details</h2>
-        <dl
+        <div
           style={{
-            margin: 0,
-            display: "grid",
-            gridTemplateColumns: "120px 1fr",
-            gap: "10px 16px",
-            fontSize: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            alignItems: "flex-end",
           }}
         >
-          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>Name</dt>
-          <dd style={{ margin: 0, color: "#0f172a" }}>{property.name}</dd>
-          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>
-            Address
-          </dt>
-          <dd style={{ margin: 0, color: "#0f172a" }}>{property.address}</dd>
-          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>ID</dt>
-          <dd style={{ margin: 0, color: "#0f172a", fontFamily: "monospace" }}>
+          {pro && property.residenceStatus !== PROPERTY_RESIDENCE_CURRENT ? (
+            <button
+              type="button"
+              className="my-home-btn-secondary"
+              disabled={switching}
+              onClick={() => {
+                setActionError(null);
+                setSwitching(true);
+                void setCurrentProperty(String(property.id)).then((result) => {
+                  setSwitching(false);
+                  if (!result.ok) {
+                    setActionError(result.message);
+                    return;
+                  }
+                  setProperty(result.property);
+                });
+              }}
+            >
+              {switching ? "Updating…" : "Set as current home"}
+            </button>
+          ) : null}
+          <Link
+            href={`/my-home/issues/new?propertyId=${property.id}`}
+            className="my-home-btn-primary"
+          >
+            + Log issue
+          </Link>
+        </div>
+      </header>
+
+      <section className="my-home-card" style={{ marginBottom: 32 }}>
+        <h2 className="my-home-card-title">Property details</h2>
+        <dl className="my-home-definition-grid">
+          <dt className="my-home-definition-term">Name</dt>
+          <dd className="my-home-definition-detail">{property.name}</dd>
+          <dt className="my-home-definition-term">Address</dt>
+          <dd className="my-home-definition-detail">{property.address}</dd>
+          <dt className="my-home-definition-term">ID</dt>
+          <dd
+            className="my-home-definition-detail"
+            style={{ fontFamily: "monospace" }}
+          >
             {property.id}
           </dd>
-          <dt style={{ margin: 0, color: "#64748b", fontWeight: 500 }}>
-            Issues
-          </dt>
-          <dd style={{ margin: 0, color: "#0f172a" }}>
+          <dt className="my-home-definition-term">Issues</dt>
+          <dd className="my-home-definition-detail">
             {issues.length} total
             {openCount > 0 ? ` · ${openCount} open` : ""}
           </dd>
         </dl>
-      </div>
+      </section>
 
-      <section style={section}>
-        <h2 style={h2}>Issues</h2>
+      {leaseTitle ? (
+        <section
+          id={`lease-${getLeaseByPropertyId(property.id)?.id ?? property.id}`}
+          className="my-home-card"
+          style={{ marginBottom: 32 }}
+        >
+          <h2 className="my-home-card-title">Lease</h2>
+          <p className="my-home-body-text">{leaseTitle}</p>
+          <p className="my-home-text-muted" style={{ marginTop: 8 }}>
+            Rental record for this property. View linked evidence in the{" "}
+            <Link href="/my-home/vault">Vault</Link>.
+          </p>
+        </section>
+      ) : null}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <section className="my-home-section" style={{ marginTop: 0 }}>
+        <h2 className="my-home-section-title">Issues</h2>
+
+        <div className="my-home-stack">
           {issues.length === 0 ? (
-            <div style={emptyState}>
+            <div className="my-home-empty">
               No issues logged for this property yet.{" "}
               <Link
                 href={`/my-home/issues/new?propertyId=${property.id}`}
@@ -158,22 +198,19 @@ export default function PropertyDetail() {
                 href={`/my-home/issues/${issue.id}`}
                 style={{ textDecoration: "none", color: "inherit" }}
               >
-                <div className="my-home-list-card" style={listCard}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    }}
-                  >
-                    <span style={listCardTitle}>{issue.title}</span>
+                <div className="my-home-list-card">
+                  <div className="my-home-row-between">
+                    <span className="my-home-list-card-title">
+                      {issue.title}
+                    </span>
                     <IssueStatusBadge
-                      status={normalizeIssueStatus(issue.status)}
+                      status={issue.status}
                     />
                   </div>
-                  <p style={listCardBody}>{issue.description}</p>
-                  <p style={meta}>
+                  <p className="my-home-body-text" style={{ marginTop: 8 }}>
+                    {issue.description}
+                  </p>
+                  <p className="my-home-text-muted" style={{ marginTop: 8 }}>
                     {new Date(issue.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -182,6 +219,6 @@ export default function PropertyDetail() {
           )}
         </div>
       </section>
-    </div>
+    </>
   );
 }

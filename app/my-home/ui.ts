@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 
+export const PAGE_CLASS = "my-home-page";
+
 export const colors = {
   bg: "#f8fafc",
   surface: "#ffffff",
@@ -16,19 +18,29 @@ export const colors = {
   accentSoft: "#eff6ff",
 } as const;
 
+export const space = {
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 40,
+} as const;
+
 export const fontFamily =
   'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
+/** @deprecated Prefer PAGE_CLASS on layout wrapper; kept for narrow forms */
 export const page: CSSProperties = {
-  maxWidth: 1120,
+  width: "100%",
 };
 
 export const pageHeader: CSSProperties = {
   display: "flex",
   alignItems: "flex-start",
   justifyContent: "space-between",
-  gap: 24,
-  marginBottom: 32,
+  gap: space.lg,
+  marginBottom: space.xl,
 };
 
 export const pageHeaderStack: CSSProperties = {
@@ -46,26 +58,33 @@ export const h1: CSSProperties = {
 };
 
 export const subtitle: CSSProperties = {
-  margin: "8px 0 0",
+  margin: `${space.xs}px 0 0`,
   fontSize: 15,
   lineHeight: 1.5,
   color: colors.textMuted,
 };
 
 export const h2: CSSProperties = {
-  margin: "0 0 16px",
+  margin: `0 0 ${space.md}px`,
   fontSize: 17,
   fontWeight: 600,
   letterSpacing: "-0.01em",
   color: colors.text,
 };
 
+export const cardTitle: CSSProperties = {
+  margin: `0 0 ${space.md}px`,
+  fontSize: 15,
+  fontWeight: 600,
+  color: colors.text,
+};
+
 export const section: CSSProperties = {
-  marginTop: 40,
+  marginTop: space.xxl,
 };
 
 export const card: CSSProperties = {
-  padding: 20,
+  padding: space.lg,
   background: colors.surface,
   border: `1px solid ${colors.border}`,
   borderRadius: 12,
@@ -74,7 +93,7 @@ export const card: CSSProperties = {
 
 export const listCard: CSSProperties = {
   ...card,
-  padding: 16,
+  padding: space.md,
   display: "flex",
   flexDirection: "column",
   gap: 6,
@@ -93,22 +112,34 @@ export const listCardBody: CSSProperties = {
   color: colors.textSecondary,
 };
 
+export const bodyText: CSSProperties = {
+  margin: 0,
+  fontSize: 15,
+  lineHeight: 1.6,
+  color: colors.textSecondary,
+};
+
 export const meta: CSSProperties = {
   margin: 0,
   fontSize: 13,
   color: colors.textFaint,
 };
 
+export const rowBetween: CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: space.sm,
+  flexWrap: "wrap",
+};
+
 export const statGrid: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(3, 1fr)",
-  gap: 20,
+  gap: space.lg,
 };
 
-export const statCard: CSSProperties = {
-  ...card,
-  padding: 20,
-};
+export const statCard: CSSProperties = {};
 
 export const statLabel: CSSProperties = {
   margin: 0,
@@ -118,7 +149,7 @@ export const statLabel: CSSProperties = {
 };
 
 export const statValue: CSSProperties = {
-  margin: "8px 0 4px",
+  margin: `${space.xs}px 0 4px`,
   fontSize: 32,
   fontWeight: 600,
   letterSpacing: "-0.03em",
@@ -133,7 +164,7 @@ export const statHint: CSSProperties = {
 };
 
 export const emptyState: CSSProperties = {
-  padding: 32,
+  padding: space.xl,
   textAlign: "center",
   fontSize: 14,
   lineHeight: 1.5,
@@ -146,7 +177,7 @@ export const emptyState: CSSProperties = {
 export const form: CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: 20,
+  gap: space.lg,
 };
 
 export const formNarrow: CSSProperties = {
@@ -184,40 +215,21 @@ export const textarea: CSSProperties = {
   fontFamily: fontFamily,
 };
 
-export const btnPrimary: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  padding: "10px 16px",
-  fontSize: 14,
-  fontWeight: 500,
-  lineHeight: 1,
-  color: "#fff",
-  background: colors.primary,
-  border: "none",
-  borderRadius: 8,
-  cursor: "pointer",
-};
+export const btnPrimary: CSSProperties = {};
 
-export const btnSecondary: CSSProperties = {
-  ...btnPrimary,
-  color: colors.text,
-  background: colors.surface,
-  border: `1px solid ${colors.border}`,
-};
+export const btnSecondary: CSSProperties = {};
 
 export const stack: CSSProperties = {
   display: "flex",
   flexDirection: "column",
-  gap: 12,
+  gap: space.sm,
 };
 
 export const galleryGrid: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-  gap: 16,
-  marginTop: 24,
+  gap: space.md,
+  marginTop: space.lg,
 };
 
 export const galleryImage: CSSProperties = {
@@ -226,4 +238,23 @@ export const galleryImage: CSSProperties = {
   objectFit: "cover",
   borderRadius: 10,
   border: `1px solid ${colors.border}`,
+};
+
+export const definitionGrid: CSSProperties = {
+  margin: 0,
+  display: "grid",
+  gridTemplateColumns: "120px 1fr",
+  gap: "10px 16px",
+  fontSize: 14,
+};
+
+export const definitionTerm: CSSProperties = {
+  margin: 0,
+  color: colors.textMuted,
+  fontWeight: 500,
+};
+
+export const definitionDetail: CSSProperties = {
+  margin: 0,
+  color: colors.text,
 };

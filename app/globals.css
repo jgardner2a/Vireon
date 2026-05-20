@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --vireon-global-header-height: 80px;
 }
 
 @theme inline {
@@ -19,8 +20,410 @@
   }
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+}
+
+/* —— Global app shell (all routes) —— */
+.vireon-app-shell {
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.vireon-global-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  width: 100vw;
+  max-width: none;
+  min-height: var(--vireon-global-header-height);
+  box-sizing: border-box;
+  padding: 10px 20px;
+  border-bottom: 1px solid #eee;
+  background: var(--background);
+}
+
+.vireon-global-header__bar {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.vireon-global-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.vireon-global-header__link {
+  font-size: 14px;
+  font-weight: 500;
+  color: inherit;
+  text-decoration: none;
+}
+
+.vireon-global-header__link:hover {
+  text-decoration: underline;
+}
+
+.vireon-global-header__auth {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+  min-width: 0;
+  text-align: right;
+}
+
+.vireon-global-header__email {
+  max-width: min(280px, 40vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #64748b;
+  text-align: right;
+}
+
+.vireon-global-header__login {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  background: #0f172a;
+  border-radius: 8px;
+}
+
+.vireon-global-header__login:hover {
+  background: #1e293b;
+}
+
+.vireon-global-header__logout {
+  align-self: flex-end;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.vireon-global-header__logout:hover {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.vireon-app-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: var(--vireon-global-header-height);
+  box-sizing: border-box;
+}
+
+/* Places search: sidebar + map */
+.vireon-places-search-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.vireon-places-sidebar {
+  flex: 0 0 360px;
+  width: 360px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.vireon-places-sidebar__search {
+  flex-shrink: 0;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vireon-places-sidebar__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+}
+
+.vireon-places-sidebar__input:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.vireon-places-sidebar__results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.vireon-places-sidebar__hint,
+.vireon-places-sidebar__error {
+  margin: 12px 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.vireon-places-sidebar__error {
+  color: #b91c1c;
+}
+
+.vireon-places-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vireon-places-sidebar__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.vireon-places-sidebar__item:hover {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.vireon-places-sidebar__item--active {
+  background: #f1f5f9;
+  border-color: #0f172a;
+}
+
+.vireon-places-sidebar__item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.vireon-places-sidebar__item-address {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.vireon-places-sidebar__save {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.vireon-places-sidebar__save-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.vireon-places-sidebar__save-btn {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #0f172a;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.vireon-places-sidebar__save-btn:hover {
+  background: #1e293b;
+}
+
+.vireon-auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.vireon-auth-modal {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.vireon-auth-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+}
+
+.vireon-auth-modal__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.vireon-auth-modal__description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.vireon-auth-modal__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.vireon-auth-modal__error {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.vireon-auth-modal__submit {
+  padding: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #111;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.vireon-auth-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vireon-auth-modal__toggle {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+}
+
+.vireon-auth-modal__link {
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  color: #111;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.vireon-auth-modal__cancel {
+  padding: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.vireon-places-map-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+.vireon-map-viewer {
+  width: 100%;
+  height: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Login and other full-viewport centered pages */
+.vireon-route-fill {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }

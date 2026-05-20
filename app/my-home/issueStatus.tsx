@@ -1,17 +1,12 @@
 import type { CSSProperties } from "react";
+import type { IssueStatus } from "@/lib/issueStatus";
 
-export const ISSUE_STATUSES = ["Open", "In Progress", "Resolved"] as const;
-
-export type IssueStatus = (typeof ISSUE_STATUSES)[number];
-
-export const DEFAULT_ISSUE_STATUS: IssueStatus = "Open";
-
-export function normalizeIssueStatus(status?: string): IssueStatus {
-  if (status && ISSUE_STATUSES.includes(status as IssueStatus)) {
-    return status as IssueStatus;
-  }
-  return DEFAULT_ISSUE_STATUS;
-}
+export {
+  DEFAULT_ISSUE_STATUS,
+  ISSUE_STATUSES,
+  normalizeIssueStatus,
+  type IssueStatus,
+} from "@/lib/issueStatus";
 
 const statusColors: Record<
   IssueStatus,
@@ -40,15 +35,4 @@ export function issueStatusBadgeStyle(status: IssueStatus): CSSProperties {
 
 export function IssueStatusBadge({ status }: { status: IssueStatus }) {
   return <span style={issueStatusBadgeStyle(status)}>{status}</span>;
-}
-
-export function saveIssueStatus(
-  issueId: string | number,
-  status: IssueStatus
-): void {
-  const issues = JSON.parse(localStorage.getItem("issues") || "[]");
-  const updated = issues.map((issue: { id: string | number; status?: string }) =>
-    String(issue.id) === String(issueId) ? { ...issue, status } : issue
-  );
-  localStorage.setItem("issues", JSON.stringify(updated));
 }

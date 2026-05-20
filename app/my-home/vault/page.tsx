@@ -2,49 +2,58 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  useProfileId,
+  useSubscriptionPlan,
+} from "@/lib/subscription/useSubscriptionPlan";
+import {
   buildVaultEntries,
-  buildVaultExportBundle,
   enrichFeedsWithAddresses,
   filterFeedsByProperty,
   groupVaultByProperty,
   vaultSummary,
-} from "./buildVault";
-import { VaultTimeline } from "./VaultTimeline";
-import type { VaultPropertyFeed } from "./types";
-import {
-  btnSecondary,
-  emptyState,
-  field,
-  h1,
-  label,
-  meta,
-  page,
-  pageHeader,
-  pageHeaderStack,
-  subtitle,
-  input,
-} from "../ui";
+} from "@/lib/evidence/vault";
+import { VaultSummaryView } from "./VaultSummaryView";
+import { VaultProView } from "./VaultProView";
+import { VaultRelationshipPreview } from "./VaultRelationshipPreview";
+import { VaultTimelinePreview } from "./VaultTimelinePreview";
+import { VaultExportBar } from "./VaultExportBar";
+import type { VaultPropertyFeed } from "@/lib/evidence/vault";
+import { readPropertiesForVault } from "@/lib/evidence/vault/reads";
+import { getCurrentProperty } from "@/lib/propertiesStore";
 
-type PropertyOption = { id: string; name: string };
+import type { Property } from "@/lib/propertiesStore";
+
+type PropertyOption = Pick<Property, "id" | "name" | "residenceStatus">;
 
 export default function VaultPage() {
+  const profileId = useProfileId();
+  const {
+    plan,
+    ready: planReady,
+    error: planError,
+    hasFullVaultAccess,
+  } = useSubscriptionPlan(profileId);
   const [feeds, setFeeds] = useState<VaultPropertyFeed[]>([]);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [filterPropertyId, setFilterPropertyId] = useState<string>("all");
-  const [exportPreview, setExportPreview] = useState<string | null>(null);
 
   useEffect(() => {
     const entries = buildVaultEntries();
     const grouped = enrichFeedsWithAddresses(groupVaultByProperty(entries));
     setFeeds(grouped);
 
-    const props: PropertyOption[] = JSON.parse(
-      localStorage.getItem("properties") || "[]"
-    ).map((p: { id: string | number; name: string }) => ({
-      id: String(p.id),
-      name: p.name,
-    }));
-    setProperties(props);
+    const props = readPropertiesForVault();
+    setProperties(
+      props.map((p) => ({
+        id: String(p.id),
+        name: p.name,
+        residenceStatus: p.residenceStatus,
+      }))
+    );
+    const current = getCurrentProperty();
+    if (current) {
+      setFilterPropertyId(String(current.id));
+    }
   }, []);
 
   const visibleFeeds = useMemo(() => {
@@ -62,75 +71,50 @@ export default function VaultPage() {
     [visibleEntries, visibleFeeds]
   );
 
-  const handleExportPreview = () => {
-    const bundle = buildVaultExportBundle({
-      propertyId: filterPropertyId === "all" ? null : filterPropertyId,
-    });
-    setExportPreview(JSON.stringify(bundle, null, 2));
-  };
-
   return (
-    <div style={page}>
-      <header style={pageHeader}>
-        <div style={pageHeaderStack}>
-          <h1 style={h1}>Vault</h1>
-          <p style={subtitle}>
-            Chronological evidence timeline across properties
+    <>
+      <header className="my-home-page-header">
+        <div>
+          <h1 className="my-home-title">Evidence Vault</h1>
+          <p className="my-home-subtitle">
+            Read-only evidence visualization — relationships resolved from My
+            Home, never stored separately here
           </p>
         </div>
       </header>
 
-      <div className="vault-export-bar" style={{ marginBottom: 28 }}>
-        <div className="vault-export-bar-inner">
-          <div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#0f172a" }}>
-              Export-ready archive
-            </p>
-            <p style={{ ...meta, marginTop: 4 }}>
-              {summary.totalEntries} entries · {summary.issueCount} issues ·{" "}
-              {summary.imageCount} images · {summary.propertyCount}{" "}
-              {summary.propertyCount === 1 ? "property" : "properties"}
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <button
-              type="button"
-              className="my-home-btn-primary"
-              disabled
-              title="Full PDF / legal export coming soon"
-              style={{ opacity: 0.5, cursor: "not-allowed" }}
-            >
-              Export report
-            </button>
-            <button
-              type="button"
-              className="my-home-btn-secondary"
-              style={btnSecondary}
-              onClick={handleExportPreview}
-            >
-              Preview JSON
-            </button>
-          </div>
-        </div>
-        <p style={{ ...meta, marginTop: 10 }}>
-          Bundles use format <code>vireon-vault-v1</code> for a future export
-          pipeline.
-        </p>
-      </div>
+      <p className="vault-readonly-banner" role="status">
+        The Vault only visualizes evidence: it resolves links and groups media
+        from My Home. To create or change evidence, use Gallery or your issue
+        and lease records.
+      </p>
 
-      <div style={{ ...field, maxWidth: 320, marginBottom: 32 }}>
-        <label style={label} htmlFor="vault-property-filter">
+      {!planReady ? (
+        <p className="my-home-text-muted" style={{ marginBottom: 20 }} role="status">
+          Loading subscription…
+        </p>
+      ) : planError || (profileId && !plan) ? (
+        <p className="my-home-form-error" style={{ marginBottom: 20 }} role="alert">
+          Could not load your subscription plan.
+        </p>
+      ) : !hasFullVaultAccess ? (
+        <p className="my-home-text-muted" style={{ marginBottom: 20 }}>
+          Free plan: summary, limited relationship preview, and collapsed
+          timeline. Upgrade to Pro for the full relationship map and timeline.
+        </p>
+      ) : null}
+
+      <VaultSummaryView summary={summary} />
+
+      <div className="my-home-field vault-filter" style={{ marginTop: 28 }}>
+        <label className="my-home-label" htmlFor="vault-property-filter">
           Property
         </label>
         <select
           id="vault-property-filter"
           className="my-home-input"
           value={filterPropertyId}
-          onChange={(e) => {
-            setFilterPropertyId(e.target.value);
-            setExportPreview(null);
-          }}
-          style={input}
+          onChange={(e) => setFilterPropertyId(e.target.value)}
         >
           <option value="all">All properties</option>
           {properties.map((p) => (
@@ -141,40 +125,26 @@ export default function VaultPage() {
         </select>
       </div>
 
-      {visibleFeeds.length === 0 ? (
-        <div style={emptyState}>
-          No vault entries yet. Log issues or upload images to build your
-          evidence timeline.
-        </div>
-      ) : (
-        <VaultTimeline feeds={visibleFeeds} />
-      )}
+      <VaultExportBar
+        filterPropertyId={filterPropertyId}
+        properties={properties}
+        plan={plan}
+        planReady={planReady}
+      />
 
-      {exportPreview && (
-        <div style={{ marginTop: 32 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 8,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>
-              Export bundle preview
-            </h2>
-            <button
-              type="button"
-              className="my-home-btn-ghost"
-              style={{ width: "auto", padding: "6px 12px" }}
-              onClick={() => setExportPreview(null)}
-            >
-              Close
-            </button>
-          </div>
-          <pre className="vault-export-preview">{exportPreview}</pre>
+      {visibleFeeds.length === 0 ? (
+        <div className="my-home-empty" style={{ marginTop: 24 }}>
+          No vault entries yet. Log issues or upload gallery media in My Home
+          to build your evidence timeline.
         </div>
+      ) : !planReady ? null : !plan ? null : hasFullVaultAccess ? (
+        <VaultProView feeds={visibleFeeds} />
+      ) : (
+        <>
+          <VaultRelationshipPreview feeds={visibleFeeds} />
+          <VaultTimelinePreview feeds={visibleFeeds} />
+        </>
       )}
-    </div>
+    </>
   );
 }

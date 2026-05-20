@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { GlobalHeader } from "./components/GlobalHeader";
+import "./globals.css";
 
 export default function RootLayout({
   children,
@@ -6,14 +7,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html>
+    <html lang="en">
       <body>
-        <nav style={{ padding: 20, borderBottom: "1px solid #eee" }}>
-          <Link href="/" style={{ marginRight: 12 }}>Places</Link>
-          <Link href="/my-home">My Home</Link>
-        </nav>
-
-        {children}
+        <GlobalHeader />
+        <div className="vireon-app-shell">
+          <div className="vireon-app-body">{children}</div>
+        </div>
       </body>
     </html>
   );

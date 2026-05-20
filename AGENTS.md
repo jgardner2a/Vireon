@@ -1,3 +1,5 @@
+See `docs/SYSTEM_ARCHITECTURE.md` for layer boundaries (My Home → Evidence → Vault; Evidence → Insights → Places).
+
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
