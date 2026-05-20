@@ -4,6 +4,8 @@
   --background: #ffffff;
   --foreground: #171717;
   --vireon-global-header-height: 80px;
+  /** Approx. footer stack height for full-bleed workspace min-height (see mobile override). */
+  --vireon-global-footer-estimate: 18rem;
 }
 
 @theme inline {
@@ -35,12 +37,9 @@ body {
 .vireon-app-shell {
   width: 100%;
   max-width: none;
-  height: 100vh;
   min-height: 100vh;
-  max-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -86,6 +85,12 @@ body {
 
 .vireon-global-header__link:hover {
   text-decoration: underline;
+}
+
+.vireon-global-header__link--active {
+  color: #0f172a;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .vireon-global-header__auth {
@@ -149,12 +154,20 @@ body {
 
 .vireon-app-body {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--vireon-global-header-height));
+  padding-top: var(--vireon-global-header-height);
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.vireon-app-body__main {
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding-top: var(--vireon-global-header-height);
-  box-sizing: border-box;
+  width: 100%;
 }
 
 /* Places search: sidebar + map */
@@ -422,8 +435,15 @@ body {
 
 /* Login and other full-viewport centered pages */
 .vireon-route-fill {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+@media (max-width: 560px) {
+  :root {
+    --vireon-global-footer-estimate: 42rem;
+  }
 }

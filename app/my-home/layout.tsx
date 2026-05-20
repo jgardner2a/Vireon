@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { loginHref, ROUTE_HOME, ROUTE_MY_HOME } from "@/lib/appNavigation";
 import { bootstrapMyHomeData } from "@/lib/myHomeBootstrap";
 import "./my-home.css";
 
@@ -19,7 +20,7 @@ export default function MyHomeLayout({
     const auth = localStorage.getItem("auth");
 
     if (!auth) {
-      window.location.href = "/login";
+      window.location.href = loginHref(ROUTE_MY_HOME);
       return;
     }
 
@@ -57,15 +58,17 @@ export default function MyHomeLayout({
   }
 
   return (
-    <div className="my-home-shell">
+    <div className="my-home-shell vireon-workspace-shell">
       <aside className="my-home-sidebar">
         <div className="my-home-sidebar-scroll">
           <div className="my-home-brand">
-            <div className="my-home-brand-mark">V</div>
-            <div>
-              <p className="my-home-brand-name">Vireon</p>
-              <p className="my-home-brand-tag">Rental intelligence</p>
-            </div>
+            <Link href={ROUTE_HOME} className="my-home-brand-link">
+              <div className="my-home-brand-mark">V</div>
+              <div>
+                <p className="my-home-brand-name">Vireon</p>
+                <p className="my-home-brand-tag">Rental intelligence</p>
+              </div>
+            </Link>
           </div>
 
           <p className="my-home-nav-label">Menu</p>

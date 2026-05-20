@@ -1,232 +1,185 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AuthModal } from "@/app/components/AuthModal";
-import { PlacesMap } from "@/app/components/PlacesMap";
+import Link from "next/link";
 import {
-  DEFAULT_MAP_CENTER,
-  DEFAULT_MAP_ZOOM,
-  geocodeQuery,
-  zoomForLocationType,
-  type SearchLocation,
-} from "@/lib/geocodeSearch";
-import { placeListingFromSearchLocation } from "@/lib/placeListingFromSearch";
-import {
-  applyPendingPlaceSave,
-  setPendingPlaceSave,
-} from "@/lib/pendingPlaceSave";
-import { useSavedPlaces } from "@/lib/useSavedPlaces";
+  loginHref,
+  ROUTE_MY_HOME,
+  ROUTE_PLACES,
+} from "@/lib/appNavigation";
+import "./home.css";
 
-const SEARCH_DEBOUNCE_MS = 350;
+const FEATURES = [
+  {
+    title: "Evidence Vault",
+    description:
+      "See how issues, media, and documents connect across your rental. A structured record you can return to—not scattered screenshots.",
+  },
+  {
+    title: "Issue Tracking",
+    description:
+      "Log maintenance problems with clear status and property context. Document issues before they become disputes.",
+  },
+  {
+    title: "Organized Gallery",
+    description:
+      "Store photos and videos by property and folder. Tie media to the issues they support with evidence links.",
+  },
+  {
+    title: "Rental History",
+    description:
+      "Keep a current home and previous rentals in one account. Continuity matters when you move often.",
+  },
+  {
+    title: "Structured Exports",
+    description:
+      "Download evidence packages when you need a snapshot or full documentation for your records.",
+  },
+] as const;
 
-export default function Home() {
-  const router = useRouter();
-  const { isAuthenticated, isSaved, save, refresh } = useSavedPlaces();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchLocation[]>([]);
-  const [selectedLocation, setSelectedLocation] =
-    useState<SearchLocation | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+const AUDIENCE = [
+  {
+    title: "Renters",
+    description:
+      "Build a personal housing record that stays with you—not locked inside one landlord’s portal.",
+  },
+  {
+    title: "Apartment residents",
+    description:
+      "Track recurring maintenance, condition changes, and correspondence-ready evidence over your lease.",
+  },
+  {
+    title: "Frequent movers",
+    description:
+      "Carry organized history from one place to the next without starting from zero each time.",
+  },
+  {
+    title: "Dispute preparation",
+    description:
+      "When something goes wrong, you already have dates, issues, and media arranged—not a panic search.",
+  },
+] as const;
 
-  const selectedListing = useMemo(
-    () =>
-      selectedLocation
-        ? placeListingFromSearchLocation(selectedLocation)
-        : null,
-    [selectedLocation]
-  );
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const query = debouncedQuery.trim();
-    if (!query) {
-      setSearchResults([]);
-      setSearchError(null);
-      setIsSearching(false);
-      return;
-    }
-
-    let cancelled = false;
-    setIsSearching(true);
-    setSearchError(null);
-
-    void geocodeQuery(query)
-      .then((results) => {
-        if (cancelled) return;
-        setSearchResults(results);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSearchResults([]);
-        setSearchError("Search failed. Check your API key and Geocoding API.");
-      })
-      .finally(() => {
-        if (!cancelled) setIsSearching(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery]);
-
-  const handleSelectLocation = useCallback((location: SearchLocation) => {
-    setSelectedLocation(location);
-  }, []);
-
-  const finishSaveAndGoHome = useCallback(() => {
-    router.push("/my-home");
-  }, [router]);
-
-  const handleAuthSuccess = useCallback(() => {
-    applyPendingPlaceSave();
-    refresh();
-    setAuthModalOpen(false);
-    finishSaveAndGoHome();
-  }, [refresh, finishSaveAndGoHome]);
-
-  const handleSave = useCallback(() => {
-    if (!selectedListing) return;
-
-    if (!isAuthenticated) {
-      setPendingPlaceSave(selectedListing);
-      setAuthModalOpen(true);
-      return;
-    }
-
-    save(selectedListing);
-    finishSaveAndGoHome();
-  }, [
-    selectedListing,
-    isAuthenticated,
-    save,
-    finishSaveAndGoHome,
-  ]);
-
-  const mapCenter = useMemo(() => {
-    if (selectedLocation) {
-      return { lat: selectedLocation.lat, lng: selectedLocation.lng };
-    }
-    return DEFAULT_MAP_CENTER;
-  }, [selectedLocation]);
-
-  const mapZoom = useMemo(() => {
-    if (selectedLocation) {
-      return zoomForLocationType(selectedLocation.locationType);
-    }
-    return DEFAULT_MAP_ZOOM;
-  }, [selectedLocation]);
-
-  const mapMarker = useMemo(() => {
-    if (!selectedLocation) return null;
-    return {
-      lat: selectedLocation.lat,
-      lng: selectedLocation.lng,
-      title: selectedLocation.name,
-    };
-  }, [selectedLocation]);
-
+export default function HomePage() {
   return (
-    <main className="vireon-places-search-layout">
-      <aside className="vireon-places-sidebar" aria-label="Location search">
-        <form
-          className="vireon-places-sidebar__search"
-          role="search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setDebouncedQuery(searchQuery.trim());
-          }}
-        >
-          <label className="sr-only" htmlFor="location-search">
-            Search locations
-          </label>
-          <input
-            id="location-search"
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search cities, addresses, places…"
-            autoComplete="off"
-            className="vireon-places-sidebar__input"
-          />
-        </form>
-
-        <div className="vireon-places-sidebar__results" aria-live="polite">
-          {isSearching ? (
-            <p className="vireon-places-sidebar__hint">Searching…</p>
-          ) : searchError ? (
-            <p className="vireon-places-sidebar__error" role="alert">
-              {searchError}
-            </p>
-          ) : !debouncedQuery.trim() ? (
-            <p className="vireon-places-sidebar__hint">
-              Enter a location to search with Google Geocoding.
-            </p>
-          ) : searchResults.length === 0 ? (
-            <p className="vireon-places-sidebar__hint">No results found.</p>
-          ) : (
-            <ul className="vireon-places-sidebar__list">
-              {searchResults.map((result) => {
-                const isSelected = selectedLocation?.id === result.id;
-                return (
-                  <li key={result.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectLocation(result)}
-                      className={`vireon-places-sidebar__item${
-                        isSelected ? " vireon-places-sidebar__item--active" : ""
-                      }`}
-                    >
-                      <span className="vireon-places-sidebar__item-name">
-                        {result.name}
-                      </span>
-                      <span className="vireon-places-sidebar__item-address">
-                        {result.formattedAddress}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        {selectedListing ? (
-          <div className="vireon-places-sidebar__save">
-            <p className="vireon-places-sidebar__save-label">
-              {selectedListing.name}
-            </p>
-            <button
-              type="button"
-              className="vireon-places-sidebar__save-btn"
-              onClick={handleSave}
+    <div className="vireon-route-fill vireon-home">
+      <div className="vireon-home__inner">
+        <section className="vireon-home-hero" aria-labelledby="home-hero-title">
+          <p className="vireon-home-hero__eyebrow">Renter documentation</p>
+          <h1 id="home-hero-title" className="vireon-home-hero__title">
+            Protect your rental history.
+          </h1>
+          <p className="vireon-home-hero__lead">
+            Vireon helps you organize housing evidence, track issues, and keep
+            documentation ready—so small problems are recorded before they grow
+            into conflicts.
+          </p>
+          <ul className="vireon-home-hero__points">
+            <li>Document issues before they become disputes.</li>
+            <li>Keep your housing evidence organized by property.</li>
+            <li>Export records when you need a clear paper trail.</li>
+          </ul>
+          <div className="vireon-home-cta-row">
+            <Link href={ROUTE_MY_HOME} className="vireon-home-btn-primary">
+              Open My Home
+            </Link>
+            <Link
+              href={loginHref(ROUTE_MY_HOME, { signup: true })}
+              className="vireon-home-btn-secondary"
             >
-              {selectedListing && isSaved(selectedListing.id)
-                ? "Saved — open My Home"
-                : "Save"}
-            </button>
+              Get Started
+            </Link>
+            <Link
+              href={loginHref(ROUTE_MY_HOME)}
+              className="vireon-home-btn-secondary"
+            >
+              Sign In
+            </Link>
+            <Link href={ROUTE_PLACES} className="vireon-home-btn-secondary">
+              Explore Places
+            </Link>
           </div>
-        ) : null}
-      </aside>
+        </section>
 
-      <section className="vireon-places-map-panel" aria-label="Map">
-        <PlacesMap center={mapCenter} zoom={mapZoom} marker={mapMarker} />
-      </section>
+        <section
+          className="vireon-home-section"
+          aria-labelledby="home-features-title"
+        >
+          <p className="vireon-home-section__label">What you get</p>
+          <h2 id="home-features-title" className="vireon-home-section__title">
+            Built for evidence, not noise
+          </h2>
+          <p className="vireon-home-section__intro">
+            My Home is your workspace for rental continuity: issues, gallery,
+            vault relationships, and exports—scoped to where you live now and
+            where you have lived before.
+          </p>
+          <div className="vireon-home-features">
+            {FEATURES.map((feature) => (
+              <article
+                key={feature.title}
+                className="vireon-home-feature-card"
+              >
+                <h3 className="vireon-home-feature-card__title">
+                  {feature.title}
+                </h3>
+                <p className="vireon-home-feature-card__text">
+                  {feature.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      <AuthModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onSuccess={handleAuthSuccess}
-      />
-    </main>
+        <section
+          className="vireon-home-section"
+          aria-labelledby="home-audience-title"
+        >
+          <p className="vireon-home-section__label">Who it&apos;s for</p>
+          <h2 id="home-audience-title" className="vireon-home-section__title">
+            Renters who need records that last
+          </h2>
+          <p className="vireon-home-section__intro">
+            If your housing situation depends on proof—timelines, photos, issue
+            history—Vireon is structured around documentation first.
+          </p>
+          <div className="vireon-home-audience">
+            {AUDIENCE.map((item) => (
+              <div key={item.title} className="vireon-home-audience__item">
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="vireon-home-section" aria-labelledby="home-cta-title">
+          <div className="vireon-home-final">
+            <h2 id="home-cta-title" className="vireon-home-final__title">
+              Start your housing record
+            </h2>
+            <p className="vireon-home-final__text">
+              Create an account, sign in, and open My Home to add a property,
+              log your first issue, or upload evidence. Explore Places when you
+              want to save a location for later.
+            </p>
+            <div className="vireon-home-cta-row">
+              <Link
+                href={loginHref(ROUTE_MY_HOME, { signup: true })}
+                className="vireon-home-btn-primary"
+              >
+                Create account
+              </Link>
+              <Link href={ROUTE_MY_HOME} className="vireon-home-btn-secondary">
+                Open My Home
+              </Link>
+              <Link
+                href={loginHref(ROUTE_MY_HOME)}
+                className="vireon-home-btn-secondary"
+              >
+                Sign In
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

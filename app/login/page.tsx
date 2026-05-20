@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import {
+  DEFAULT_SIGN_IN_REDIRECT,
+  DEFAULT_SIGN_UP_REDIRECT,
+  resolveSafeRedirectPath,
+  ROUTE_HOME,
+  ROUTE_PLACES,
+} from "@/lib/appNavigation";
 import { PASSWORD_MIN_LENGTH } from "@/lib/authValidation";
 import { signInUser, signUpUser } from "@/lib/authUsers";
-
-function resolveRedirectPath(raw: string | null) {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
-    return "/";
-  }
-  return raw;
-}
 
 function LoginForm() {
   const router = useRouter();
@@ -19,8 +19,9 @@ function LoginForm() {
 
   const isSignUp = searchParams.get("signup") === "1";
   const redirectParam = searchParams.get("redirect");
-  const redirectTo = resolveRedirectPath(
-    redirectParam ?? (isSignUp ? "/" : "/my-home")
+  const redirectTo = resolveSafeRedirectPath(
+    redirectParam,
+    isSignUp ? DEFAULT_SIGN_UP_REDIRECT : DEFAULT_SIGN_IN_REDIRECT
   );
 
   const [email, setEmail] = useState("");
@@ -147,6 +148,23 @@ function LoginForm() {
               </Link>
             </>
           )}
+        </p>
+
+        <p
+          style={{
+            margin: "8px 0 0",
+            fontSize: 13,
+            color: "#666",
+            textAlign: "center",
+          }}
+        >
+          <Link href={ROUTE_HOME} style={{ color: "#111", fontWeight: 500 }}>
+            Home
+          </Link>
+          {" · "}
+          <Link href={ROUTE_PLACES} style={{ color: "#111", fontWeight: 500 }}>
+            Places
+          </Link>
         </p>
       </form>
     </div>

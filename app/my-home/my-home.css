@@ -1,11 +1,15 @@
-/* My Home: sidebar + main below global header (app/layout.tsx) */
+/* My Home / workspace: sidebar + main below global header (app/layout.tsx) */
 .my-home-shell {
   --my-home-sidebar-width: 264px;
+  --vireon-workspace-sidebar-width: var(--my-home-sidebar-width);
 
   flex: 1;
   display: flex;
   min-height: 0;
-  height: calc(100vh - var(--vireon-global-header-height));
+  min-height: calc(
+    100vh - var(--vireon-global-header-height) -
+      var(--vireon-global-footer-estimate)
+  );
   overflow: hidden;
   background: #f8fafc;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -166,6 +170,14 @@
   padding: 4px 10px 20px;
   margin-bottom: 4px;
   border-bottom: 1px solid #f1f5f9;
+}
+
+.my-home-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .my-home-brand-mark {
