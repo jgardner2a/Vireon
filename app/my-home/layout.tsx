@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { loginHref, ROUTE_HOME, ROUTE_MY_HOME } from "@/lib/appNavigation";
-import { bootstrapMyHomeData } from "@/lib/myHomeBootstrap";
+import { fetchAuthSession, initAuthSessionListener } from "@/lib/authSession";
+import { PropertyContextProvider } from "./hooks/usePropertyContext";
 import "./my-home.css";
 
 export default function MyHomeLayout({
@@ -13,38 +14,26 @@ export default function MyHomeLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = localStorage.getItem("auth");
+    initAuthSessionListener();
 
-    if (!auth) {
-      window.location.href = loginHref(ROUTE_MY_HOME);
-      return;
-    }
-
-    void bootstrapMyHomeData()
+    void fetchAuthSession()
+      .then((session) => {
+        if (!session?.userId) {
+          window.location.href = loginHref(ROUTE_MY_HOME);
+        }
+      })
       .catch((error) => {
-        console.error("[my-home] bootstrap failed", error);
+        console.error("[my-home] auth check failed", error);
       })
       .finally(() => {
         setLoading(false);
       });
   }, []);
 
-  const navItems = [
-    { href: "/my-home", label: "Dashboard" },
-    { href: "/my-home/properties", label: "Properties" },
-    { href: "/my-home/issues", label: "Issues" },
-    { href: "/my-home/gallery", label: "Gallery" },
-    { href: "/my-home/vault", label: "Vault" },
-  ];
-
-  const utilityNavItems = [
-    { href: "/my-home/move-in-checklist", label: "Move-In Checklist" },
-    { href: "/my-home/move-out-checklist", label: "Move-Out Checklist" },
-  ];
+  const navItems = [{ href: "/my-home", label: "Dashboard" }];
 
   function isNavActive(href: string) {
     if (href === "/my-home") {
@@ -87,30 +76,13 @@ export default function MyHomeLayout({
               </Link>
             ))}
           </nav>
-
-          <p className="my-home-nav-label" style={{ marginTop: 20 }}>
-            Tools
-          </p>
-          <nav className="my-home-nav">
-            {utilityNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={
-                  isNavActive(item.href)
-                    ? "my-home-nav-link my-home-nav-link--active"
-                    : "my-home-nav-link"
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
         </div>
       </aside>
 
       <main className="my-home-main">
-        <div className="my-home-page">{children}</div>
+        <PropertyContextProvider>
+          <div className="my-home-page">{children}</div>
+        </PropertyContextProvider>
       </main>
     </div>
   );

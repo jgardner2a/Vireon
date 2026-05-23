@@ -2321,3 +2321,49 @@
 .my-home-link-button:hover {
   color: #1d4ed8;
 }
+
+/* —— Property membership context (My Home) —— */
+.my-home-property-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.my-home-property-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.my-home-property-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.my-home-property-list > .my-home-property-row:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.my-home-property-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-home-property-row__name {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.my-home-property-row__action {
+  flex-shrink: 0;
+}

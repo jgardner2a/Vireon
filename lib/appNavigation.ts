@@ -1,6 +1,5 @@
 /**
- * Top-level app routes: public home, Places, My Home workspace.
- * Use for sidebars, header, and login redirect defaults.
+ * Top-level app routes for header, footer, and login redirects.
  */
 
 export type AppTopNavItem = {
@@ -12,13 +11,12 @@ export type AppTopNavItem = {
 
 export const APP_TOP_NAV_ITEMS: AppTopNavItem[] = [
   { href: "/", label: "Home", exact: true },
-  { href: "/places", label: "Places" },
   { href: "/my-home", label: "My Home" },
 ];
 
 export const ROUTE_HOME = "/";
-export const ROUTE_PLACES = "/places";
 export const ROUTE_MY_HOME = "/my-home";
+export const ROUTE_LOGIN = "/login";
 
 /** Default post-auth destination for sign-in (workspace). */
 export const DEFAULT_SIGN_IN_REDIRECT = ROUTE_MY_HOME;

@@ -8,7 +8,6 @@ import {
   DEFAULT_SIGN_UP_REDIRECT,
   resolveSafeRedirectPath,
   ROUTE_HOME,
-  ROUTE_PLACES,
 } from "@/lib/appNavigation";
 import { PASSWORD_MIN_LENGTH } from "@/lib/authValidation";
 import { signInUser, signUpUser } from "@/lib/authUsers";
@@ -17,7 +16,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const isSignUp = searchParams.get("signup") === "1";
+  const isSignUp = searchParams.get("login") !== "1";
   const redirectParam = searchParams.get("redirect");
   const redirectTo = resolveSafeRedirectPath(
     redirectParam,
@@ -31,8 +30,8 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const toggleHref = isSignUp
-    ? `/login?redirect=${encodeURIComponent(redirectTo)}`
-    : `/login?signup=1&redirect=${encodeURIComponent(redirectTo)}`;
+    ? `/login?login=1&redirect=${encodeURIComponent(redirectTo)}`
+    : `/login?redirect=${encodeURIComponent(redirectTo)}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,10 +159,6 @@ function LoginForm() {
         >
           <Link href={ROUTE_HOME} style={{ color: "#111", fontWeight: 500 }}>
             Home
-          </Link>
-          {" · "}
-          <Link href={ROUTE_PLACES} style={{ color: "#111", fontWeight: 500 }}>
-            Places
           </Link>
         </p>
       </form>

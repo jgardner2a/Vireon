@@ -23,8 +23,9 @@ export function GlobalHeader() {
   }, []);
 
   const handleLogout = () => {
-    clearAuthSession();
-    window.location.href = "/login";
+    void clearAuthSession().then(() => {
+      window.location.href = "/login";
+    });
   };
 
   return (

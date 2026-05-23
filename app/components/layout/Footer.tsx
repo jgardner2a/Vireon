@@ -2,27 +2,14 @@ import Link from "next/link";
 import {
   DEFAULT_SIGN_IN_REDIRECT,
   loginHref,
+  ROUTE_HOME,
   ROUTE_MY_HOME,
-  ROUTE_PLACES,
 } from "@/lib/appNavigation";
 import "./footer.css";
 
 const PRODUCT_LINKS = [
+  { href: ROUTE_HOME, label: "Home" },
   { href: ROUTE_MY_HOME, label: "My Home" },
-  { href: ROUTE_PLACES, label: "Places" },
-  { href: "/my-home/vault", label: "Vault" },
-  { href: "/my-home/issues", label: "Issues" },
-  { href: "/my-home/gallery", label: "Gallery" },
-  { href: "/my-home/vault", label: "Exports" },
-] as const;
-
-const RENTER_TOPICS = [
-  "Move-in documentation",
-  "Maintenance tracking",
-  "Rental continuity",
-  "Evidence organization",
-  "Deposit protection",
-  "Housing records",
 ] as const;
 
 export function GlobalFooter() {
@@ -39,9 +26,7 @@ export function GlobalFooter() {
             <span className="vireon-global-footer__name">Vireon</span>
           </div>
           <p className="vireon-global-footer__tagline">
-            Protect your rental history. Organize housing records, document
-            issues and evidence, and keep structured renter documentation in one
-            place.
+            Account sign-in and the My Home workspace shell.
           </p>
         </div>
 
@@ -54,15 +39,6 @@ export function GlobalFooter() {
                   {item.label}
                 </Link>
               </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="vireon-global-footer__col">
-          <h2 className="vireon-global-footer__heading">Renters</h2>
-          <ul className="vireon-global-footer__list-plain">
-            {RENTER_TOPICS.map((topic) => (
-              <li key={topic}>{topic}</li>
             ))}
           </ul>
         </div>
@@ -85,18 +61,6 @@ export function GlobalFooter() {
               >
                 Get Started
               </Link>
-            </li>
-            <li>
-              <span className="vireon-global-footer__text-muted">Pricing</span>
-            </li>
-            <li>
-              <span className="vireon-global-footer__text-muted">Privacy</span>
-            </li>
-            <li>
-              <span className="vireon-global-footer__text-muted">Terms</span>
-            </li>
-            <li>
-              <span className="vireon-global-footer__text-muted">Contact</span>
             </li>
           </ul>
         </div>
