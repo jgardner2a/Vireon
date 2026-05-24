@@ -1,7 +1,7 @@
 import type { AuthError } from "@supabase/supabase-js";
+
 import { fetchAuthSession } from "./authSession";
 import { validateAuthCredentials } from "./authValidation";
-import { bootstrapProfileMetadataAfterAuth } from "./profileMetadata";
 import { supabase } from "./supabaseClient";
 
 function messageFromAuthError(error: AuthError): string {
@@ -25,30 +25,6 @@ function messageFromAuthError(error: AuthError): string {
   }
 
   return error.message || "Authentication failed. Try again.";
-}
-
-/** Metadata bootstrap only — must not gate auth success/failure. */
-async function ensureSubscriptionRow(userId: string): Promise<void> {
-  const { data: existing } = await supabase
-    .from("subscriptions")
-    .select("user_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (existing?.user_id) return;
-
-  const { error } = await supabase.from("subscriptions").insert({
-    user_id: userId,
-    plan: "free",
-  });
-
-  if (error) {
-    console.error("[auth] ensureSubscriptionRow", error);
-  }
-}
-
-async function syncSessionToCache(): Promise<void> {
-  await fetchAuthSession();
 }
 
 export type AuthResult =
@@ -78,19 +54,14 @@ export async function signUpUser(
     return { ok: false, message: messageFromAuthError(error) };
   }
 
-  const userId = data.user?.id;
-  if (!userId) {
+  if (!data.user?.id) {
     return {
       ok: false,
       message: "Could not create your account. Try again in a moment.",
     };
   }
 
-  await syncSessionToCache();
-
-  bootstrapProfileMetadataAfterAuth(userId);
-  void ensureSubscriptionRow(userId);
-
+  await fetchAuthSession();
   return { ok: true, email: validation.email };
 }
 
@@ -121,10 +92,6 @@ export async function signInUser(
     };
   }
 
-  await syncSessionToCache();
-
-  bootstrapProfileMetadataAfterAuth(userId);
-  void ensureSubscriptionRow(userId);
-
+  await fetchAuthSession();
   return { ok: true, email: validation.email };
 }

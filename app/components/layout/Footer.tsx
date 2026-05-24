@@ -2,14 +2,14 @@ import Link from "next/link";
 import {
   DEFAULT_SIGN_IN_REDIRECT,
   loginHref,
+  ROUTE_DASHBOARD,
   ROUTE_HOME,
-  ROUTE_MY_HOME,
 } from "@/lib/appNavigation";
 import "./footer.css";
 
 const PRODUCT_LINKS = [
   { href: ROUTE_HOME, label: "Home" },
-  { href: ROUTE_MY_HOME, label: "My Home" },
+  { href: ROUTE_DASHBOARD, label: "Dashboard" },
 ] as const;
 
 export function GlobalFooter() {
@@ -26,7 +26,7 @@ export function GlobalFooter() {
             <span className="vireon-global-footer__name">Vireon</span>
           </div>
           <p className="vireon-global-footer__tagline">
-            Account sign-in and the My Home workspace shell.
+            Sign in, sign up, and a minimal workspace shell.
           </p>
         </div>
 
@@ -56,7 +56,7 @@ export function GlobalFooter() {
             </li>
             <li>
               <Link
-                href={loginHref(ROUTE_MY_HOME, { signup: true })}
+                href={loginHref(ROUTE_DASHBOARD, { signup: true })}
                 className="vireon-global-footer__link"
               >
                 Get Started

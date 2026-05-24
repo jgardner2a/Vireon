@@ -1,8 +1,5 @@
 import Link from "next/link";
-import {
-  loginHref,
-  ROUTE_MY_HOME,
-} from "@/lib/appNavigation";
+import { loginHref, ROUTE_DASHBOARD } from "@/lib/appNavigation";
 import "./home.css";
 
 export default function HomePage() {
@@ -12,24 +9,23 @@ export default function HomePage() {
         <section className="vireon-home-hero" aria-labelledby="home-hero-title">
           <p className="vireon-home-hero__eyebrow">Vireon</p>
           <h1 id="home-hero-title" className="vireon-home-hero__title">
-            Sign in to open My Home
+            Sign in to continue
           </h1>
           <p className="vireon-home-hero__lead">
-            This build includes authentication and the My Home workspace shell
-            only.
+            Authentication and a minimal workspace shell — nothing else.
           </p>
           <div className="vireon-home-cta-row">
-            <Link href={loginHref(ROUTE_MY_HOME)} className="vireon-home-btn-primary">
+            <Link
+              href={loginHref(ROUTE_DASHBOARD)}
+              className="vireon-home-btn-primary"
+            >
               Sign in
             </Link>
             <Link
-              href={loginHref(ROUTE_MY_HOME, { signup: true })}
+              href={loginHref(ROUTE_DASHBOARD, { signup: true })}
               className="vireon-home-btn-secondary"
             >
               Create account
-            </Link>
-            <Link href={ROUTE_MY_HOME} className="vireon-home-btn-secondary">
-              My Home
             </Link>
           </div>
         </section>

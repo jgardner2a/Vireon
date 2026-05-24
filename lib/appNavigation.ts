@@ -1,28 +1,25 @@
 /**
- * Top-level app routes for header, footer, and login redirects.
+ * Top-level routes for header, footer, and login redirects.
  */
 
 export type AppTopNavItem = {
   href: string;
   label: string;
-  /** Active only on exact pathname (required for `/`). */
   exact?: boolean;
 };
 
 export const APP_TOP_NAV_ITEMS: AppTopNavItem[] = [
   { href: "/", label: "Home", exact: true },
-  { href: "/my-home", label: "My Home" },
+  { href: "/dashboard", label: "Dashboard" },
 ];
 
 export const ROUTE_HOME = "/";
-export const ROUTE_MY_HOME = "/my-home";
+export const ROUTE_DASHBOARD = "/dashboard";
+export const ROUTE_DASHBOARD_MY_HOME = "/dashboard/my-home";
 export const ROUTE_LOGIN = "/login";
 
-/** Default post-auth destination for sign-in (workspace). */
-export const DEFAULT_SIGN_IN_REDIRECT = ROUTE_MY_HOME;
-
-/** Default post-auth destination for sign-up (public home). */
-export const DEFAULT_SIGN_UP_REDIRECT = ROUTE_HOME;
+export const DEFAULT_SIGN_IN_REDIRECT = ROUTE_DASHBOARD;
+export const DEFAULT_SIGN_UP_REDIRECT = ROUTE_DASHBOARD;
 
 export function isAppNavActive(
   pathname: string,

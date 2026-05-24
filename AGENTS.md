@@ -1,4 +1,12 @@
-See `docs/SYSTEM_ARCHITECTURE.md` for layer boundaries (My Home → Evidence → Vault; Evidence → Insights → Places).
+# Vireon (auth-only build)
+
+Minimal Next.js app: Supabase Auth (sign up / sign in / sign out) and a protected Dashboard shell.
+
+## Do not touch the database
+
+- Backend is wiped and **not** being rebuilt yet.
+- **No** Supabase migrations, RLS policies, tables, or `supabase.from()` data access.
+- **Only** maintain auth (`supabase.auth.*`) and the UI shell unless explicitly asked otherwise.
 
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know

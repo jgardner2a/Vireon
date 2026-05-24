@@ -16,7 +16,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const isSignUp = searchParams.get("login") !== "1";
+  const isSignUp = searchParams.get("signup") === "1";
   const redirectParam = searchParams.get("redirect");
   const redirectTo = resolveSafeRedirectPath(
     redirectParam,
@@ -30,8 +30,8 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
 
   const toggleHref = isSignUp
-    ? `/login?login=1&redirect=${encodeURIComponent(redirectTo)}`
-    : `/login?redirect=${encodeURIComponent(redirectTo)}`;
+    ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+    : `/login?signup=1&redirect=${encodeURIComponent(redirectTo)}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +128,7 @@ function LoginForm() {
             ? "Please wait…"
             : isSignUp
               ? "Create account"
-              : "Enter My Home"}
+              : "Sign in"}
         </button>
 
         <p style={{ margin: 0, fontSize: 13, color: "#666", textAlign: "center" }}>

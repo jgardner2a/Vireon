@@ -1,0 +1,78 @@
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  font-size: 14px;
+  color: #666;
+}
+
+.dashboard-shell {
+  display: flex;
+  min-height: calc(100vh - var(--vireon-global-header-height));
+  gap: 0;
+}
+
+.dashboard-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #eee;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.dashboard-brand {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+
+.dashboard-nav-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+.dashboard-nav-link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+}
+
+.dashboard-nav-link--active {
+  background: #f3f4f6;
+  font-weight: 500;
+  color: #111;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 32px 24px;
+  box-sizing: border-box;
+}
+
+.dashboard-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.dashboard-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.dashboard-card {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  max-width: 480px;
+}
