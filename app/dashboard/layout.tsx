@@ -7,7 +7,7 @@ import {
   loginHref,
   ROUTE_DASHBOARD,
   ROUTE_DASHBOARD_GALLERY,
-  ROUTE_DASHBOARD_ISSUES,
+  ROUTE_DASHBOARD_MAINTENANCE,
   ROUTE_DASHBOARD_NOTES,
   ROUTE_DASHBOARD_VAULT,
 } from "@/lib/appNavigation";
@@ -49,7 +49,7 @@ export default function DashboardLayout({
   const dashboardActive = onDashboardRoute && hash === "";
   const previousHomesActive = onDashboardRoute && hash === "#previous-homes";
   const galleryActive = pathname === ROUTE_DASHBOARD_GALLERY;
-  const issuesActive = pathname === ROUTE_DASHBOARD_ISSUES;
+  const maintenanceActive = pathname === ROUTE_DASHBOARD_MAINTENANCE;
   const notesActive = pathname === ROUTE_DASHBOARD_NOTES;
   const vaultActive = pathname === ROUTE_DASHBOARD_VAULT;
 
@@ -85,10 +85,10 @@ export default function DashboardLayout({
                   Gallery
                 </Link>
                 <Link
-                  href={ROUTE_DASHBOARD_ISSUES}
-                  className={navLinkClass(issuesActive)}
+                  href={ROUTE_DASHBOARD_MAINTENANCE}
+                  className={navLinkClass(maintenanceActive)}
                 >
-                  Issues
+                  Maintenance
                 </Link>
                 <Link
                   href={ROUTE_DASHBOARD_NOTES}

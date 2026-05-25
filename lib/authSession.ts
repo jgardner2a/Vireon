@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 
+import { invalidateDashboardSnapshot } from "@/lib/dashboard/dashboardSnapshotCache";
 import { clearSessionCache } from "./sessionCache";
 import { supabase } from "./supabaseClient";
 
@@ -89,5 +90,6 @@ export async function clearAuthSession(): Promise<void> {
   }
   applySessionMirror(null);
   clearSessionCache();
+  invalidateDashboardSnapshot();
   notifyAuthChanged();
 }

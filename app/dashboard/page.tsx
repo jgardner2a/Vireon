@@ -5,11 +5,14 @@ import { usePathname } from "next/navigation";
 import { ROUTE_DASHBOARD } from "@/lib/appNavigation";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
-  createHome,
-  getGalleryFileCount,
-  setCurrentHome as activateHome,
-  type Home,
-} from "@/lib/myHome";
+  getDashboardSnapshot,
+  setDashboardSnapshot,
+} from "@/lib/dashboard/dashboardSnapshotCache";
+import {
+  getHomeDashboardMetrics,
+  type HomeDashboardMetrics,
+} from "@/lib/dashboard/getHomeDashboardMetrics";
+import { createHome, setCurrentHome as activateHome, type Home } from "@/lib/myHome";
 import { assertNoDirectHomeQuery } from "@/lib/home/homeContract";
 import "./dashboard-home.css";
 
@@ -24,12 +27,11 @@ const EMPTY_FORM = {
   zipCode: "",
 };
 
-/** Snapshot context from fetchMyHomeData — extend getSummary when new fields exist. */
 type HomeFeatureContext = {
   currentHome: Home;
   homes: Home[];
   currentHomeId: string | null;
-  gallerySummary: string | null;
+  metrics: HomeDashboardMetrics | null;
 };
 
 type HomeFeature = {
@@ -39,8 +41,22 @@ type HomeFeature = {
 };
 
 const HOME_FEATURES: HomeFeature[] = [
-  { id: "gallery", name: "Gallery", getSummary: (context) => context.gallerySummary },
-  { id: "issues", name: "Issues", getSummary: () => null },
+  {
+    id: "gallery",
+    name: "Gallery",
+    getSummary: (context) =>
+      context.metrics?.galleryCount
+        ? `${context.metrics.galleryCount} Images`
+        : null,
+  },
+  {
+    id: "maintenance",
+    name: "Maintenance Logs",
+    getSummary: (context) =>
+      context.metrics?.maintenanceCount
+        ? `${context.metrics.maintenanceCount} Logs`
+        : null,
+  },
   { id: "notes", name: "Notes", getSummary: () => null },
   { id: "vault", name: "Vault", getSummary: () => null },
 ];
@@ -128,7 +144,7 @@ export default function DashboardPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [gallerySummary, setGallerySummary] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<HomeDashboardMetrics | null>(null);
 
   const homes = state?.homes ?? [];
   const currentHomeId = state?.currentHomeId ?? null;
@@ -165,13 +181,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!state?.userId || !currentHomeId) {
-      setGallerySummary(null);
+      setMetrics(null);
       return;
     }
 
+    const userId = state.userId;
+    const homeId = currentHomeId;
+
+    const snapshot = getDashboardSnapshot(userId, homeId);
+    if (snapshot) {
+      setMetrics(snapshot.metrics);
+    }
+
     void (async () => {
-      const fileCount = await getGalleryFileCount(state.userId, currentHomeId);
-      setGallerySummary(fileCount > 0 ? `${fileCount} Images` : null);
+      const next = await getHomeDashboardMetrics(userId, homeId);
+      setMetrics(next);
+      setDashboardSnapshot({
+        userId,
+        homeId,
+        metrics: next,
+        timestamp: Date.now(),
+      });
     })();
   }, [state?.userId, currentHomeId]);
 
@@ -420,7 +450,7 @@ export default function DashboardPage() {
             currentHome,
             homes,
             currentHomeId,
-            gallerySummary,
+            metrics,
           }}
         />
       ))}
