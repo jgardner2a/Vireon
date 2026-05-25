@@ -1,6 +1,11 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export const GALLERY_SIGNED_URL_TTL_SECONDS = 60;
+/** Client + Supabase signed URL lifetime (Option A: TTL-validated cache). */
+export const SIGNED_URL_TTL_MS = 60 * 1000;
+
+export const GALLERY_SIGNED_URL_SIGN_EXPIRES_SECONDS = Math.floor(
+  SIGNED_URL_TTL_MS / 1000
+);
 
 export type SignedUrlCacheEntry = {
   path: string;
@@ -51,6 +56,10 @@ function removeSessionStorage(key: string): void {
   }
 }
 
+function isEntryValid(entry: SignedUrlCacheEntry): boolean {
+  return entry.expiresAt > Date.now();
+}
+
 function getScopeMap(userId: string, homeId: string): Map<string, SignedUrlCacheEntry> {
   const key = scopeKey(userId, homeId);
   let map = memoryByScope.get(key);
@@ -73,11 +82,14 @@ function hydrateScopeFromSession(
   try {
     const parsed = JSON.parse(stored) as SignedUrlCacheEntry[];
     const map = new Map<string, SignedUrlCacheEntry>();
-    const now = Date.now();
 
     for (const entry of parsed) {
-      if (entry.path && entry.signedUrl && entry.expiresAt > now) {
-        map.set(entry.path, entry);
+      if (entry.path && entry.signedUrl && typeof entry.expiresAt === "number") {
+        map.set(entry.path, {
+          path: entry.path,
+          signedUrl: entry.signedUrl,
+          expiresAt: entry.expiresAt,
+        });
       }
     }
 
@@ -89,18 +101,10 @@ function hydrateScopeFromSession(
 }
 
 function persistScope(userId: string, homeId: string, map: Map<string, SignedUrlCacheEntry>): void {
-  const now = Date.now();
-  const entries = [...map.values()].filter((entry) => entry.expiresAt > now);
-  writeSessionStorage(sessionStorageKey(userId, homeId), JSON.stringify(entries));
-}
-
-function pruneExpired(map: Map<string, SignedUrlCacheEntry>): void {
-  const now = Date.now();
-  for (const [path, entry] of map) {
-    if (entry.expiresAt <= now) {
-      map.delete(path);
-    }
-  }
+  writeSessionStorage(
+    sessionStorageKey(userId, homeId),
+    JSON.stringify([...map.values()])
+  );
 }
 
 export function getValidCachedSignedUrl(
@@ -108,14 +112,8 @@ export function getValidCachedSignedUrl(
   homeId: string,
   path: string
 ): string | null {
-  const map = getScopeMap(userId, homeId);
-  const entry = map.get(path);
-  if (!entry) {
-    return null;
-  }
-  if (Date.now() >= entry.expiresAt) {
-    map.delete(path);
-    persistScope(userId, homeId, map);
+  const entry = getScopeMap(userId, homeId).get(path);
+  if (!entry || !isEntryValid(entry)) {
     return null;
   }
   return entry.signedUrl;
@@ -127,20 +125,29 @@ function storeSignedUrls(
   rows: { path: string; signedUrl: string }[]
 ): void {
   const map = getScopeMap(userId, homeId);
-  const expiresAt = Date.now() + GALLERY_SIGNED_URL_TTL_SECONDS * 1000;
+  let changed = false;
+  const expiresAt = Date.now() + SIGNED_URL_TTL_MS;
 
   for (const row of rows) {
+    const existing = map.get(row.path);
+    if (existing && isEntryValid(existing)) {
+      continue;
+    }
+
     map.set(row.path, {
       path: row.path,
       signedUrl: row.signedUrl,
       expiresAt,
     });
+    changed = true;
   }
 
-  persistScope(userId, homeId, map);
+  if (changed) {
+    persistScope(userId, homeId, map);
+  }
 }
 
-/** Invalidate signed URLs for a user+home scope (upload, home change). */
+/** Invalidate signed URLs for a user+home (upload, home change, manual refresh). */
 export function invalidateSignedUrlCache(userId: string, homeId: string): void {
   memoryByScope.delete(scopeKey(userId, homeId));
   removeSessionStorage(sessionStorageKey(userId, homeId));
@@ -180,8 +187,8 @@ export function fileNameFromStoragePath(path: string): string {
 }
 
 /**
- * Returns signed URLs for paths, reusing cache until expiry.
- * Only calls createSignedUrls for uncached or expired paths.
+ * Returns signed URLs for paths, reusing cache while entries are within TTL.
+ * Re-signs only missing or expired paths. Expired entries stay in cache until replaced.
  */
 export async function resolveSignedGalleryUrls(
   userId: string,
@@ -192,9 +199,6 @@ export async function resolveSignedGalleryUrls(
   if (paths.length === 0) {
     return [];
   }
-
-  const map = getScopeMap(userId, homeId);
-  pruneExpired(map);
 
   const pathsToSign: string[] = [];
   const resolved = new Map<string, string>();
@@ -211,7 +215,7 @@ export async function resolveSignedGalleryUrls(
   if (pathsToSign.length > 0) {
     const { data: signed, error: signError } = await supabase.storage
       .from(bucket)
-      .createSignedUrls(pathsToSign, GALLERY_SIGNED_URL_TTL_SECONDS);
+      .createSignedUrls(pathsToSign, GALLERY_SIGNED_URL_SIGN_EXPIRES_SECONDS);
 
     if (signError) {
       throw signError;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   invalidateSignedUrlCache,
@@ -15,8 +15,31 @@ import { supabase } from "@/lib/supabaseClient";
 
 const BUCKET = "uploads";
 const PAGE_SIZE = 20;
+/** Max thumbnails mounted in the DOM (head + tail windows). */
+const MAX_VISIBLE = 60;
+/** Extra items before the current batch in the tail window. */
+const VISIBLE_BUFFER = 20;
+/** Approximate row height for mid-list scroll spacer (img + gap). */
+const GALLERY_ROW_HEIGHT_PX = 152;
 /** List cap for large galleries; paths are batched client-side. */
 const LIST_LIMIT = 1000;
+/** Stagger delay between thumbnails in the same appended batch. */
+const STAGGER_STEP_MS = 40;
+
+type StaggerWindow = {
+  start: number;
+  epoch: number;
+};
+
+/** Defer React DOM commits to the next frame to reduce scroll jank on batch append. */
+function scheduleGalleryDomUpdate(apply: () => void): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      apply();
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
 
 type GalleryFile = {
   name: string;
@@ -42,23 +65,162 @@ function buildPathsFromList(
   return paths;
 }
 
+type VisibleGallerySlice = {
+  head: GalleryFile[];
+  tail: GalleryFile[];
+  midSpacerPx: number;
+};
+
+/** Newest-first head window + current batch tail window (no full-list DOM mount). */
+function buildVisibleGallerySlice(
+  cachedFiles: GalleryFile[],
+  loadedCount: number
+): VisibleGallerySlice {
+  if (cachedFiles.length === 0 || loadedCount === 0) {
+    return { head: [], tail: [], midSpacerPx: 0 };
+  }
+
+  const loaded = cachedFiles.slice(0, Math.min(loadedCount, cachedFiles.length));
+
+  if (loadedCount <= MAX_VISIBLE) {
+    return { head: loaded, tail: [], midSpacerPx: 0 };
+  }
+
+  const head = loaded.slice(0, PAGE_SIZE);
+  const tailStart = Math.max(PAGE_SIZE, loadedCount - PAGE_SIZE - VISIBLE_BUFFER);
+  const tail = loaded.slice(tailStart, loadedCount);
+  const midHiddenCount = Math.max(0, tailStart - PAGE_SIZE);
+  const midSpacerPx = midHiddenCount * GALLERY_ROW_HEIGHT_PX;
+
+  return { head, tail, midSpacerPx };
+}
+
+/** Reuse GalleryFile instances when path + signedUrl are unchanged. */
+function memoizeGalleryFiles(
+  cache: Map<string, GalleryFile>,
+  batchPaths: string[],
+  signed: GalleryFile[]
+): GalleryFile[] {
+  const signedByName = new Map(signed.map((file) => [file.name, file]));
+  const memoized: GalleryFile[] = [];
+
+  for (const path of batchPaths) {
+    const name = path.slice(path.lastIndexOf("/") + 1);
+    const row = signedByName.get(name);
+    if (!row) {
+      continue;
+    }
+
+    const existing = cache.get(path);
+    if (existing && existing.url === row.url) {
+      memoized.push(existing);
+      continue;
+    }
+
+    const next: GalleryFile = { name: row.name, url: row.url };
+    cache.set(path, next);
+    memoized.push(next);
+  }
+
+  return memoized;
+}
+
+function GalleryGridImage({
+  file,
+  globalIndex,
+  staggerWindow,
+}: {
+  file: GalleryFile;
+  globalIndex: number;
+  staggerWindow: StaggerWindow;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const inStaggerBatch = globalIndex >= staggerWindow.start;
+  const staggerIndex = globalIndex - staggerWindow.start;
+  const staggerDelayMs = inStaggerBatch ? staggerIndex * STAGGER_STEP_MS : 0;
+
+  useEffect(() => {
+    if (inStaggerBatch) {
+      return;
+    }
+    setLoaded(false);
+    const img = imgRef.current;
+    if (img?.complete) {
+      setLoaded(true);
+    }
+  }, [file.url, inStaggerBatch]);
+
+  const imgStyle = {
+    width: 100,
+    height: 100,
+    objectFit: "cover" as const,
+    borderRadius: 8,
+    ...(inStaggerBatch ? { animationDelay: `${staggerDelayMs}ms` } : {}),
+  };
+
+  if (inStaggerBatch) {
+    return (
+      <img
+        key={`${staggerWindow.epoch}-${file.name}`}
+        ref={imgRef}
+        src={file.url}
+        alt=""
+        className="gallery-grid-img gallery-grid-img--stagger"
+        style={imgStyle}
+        loading="lazy"
+      />
+    );
+  }
+
+  return (
+    <img
+      ref={imgRef}
+      src={file.url}
+      alt=""
+      className={
+        loaded ? "gallery-grid-img gallery-grid-img--loaded" : "gallery-grid-img"
+      }
+      style={imgStyle}
+      loading="lazy"
+      onLoad={() => setLoaded(true)}
+    />
+  );
+}
+
 export default function GalleryPage() {
   const { state } = useDashboardState();
   const [allPaths, setAllPaths] = useState<string[]>([]);
-  const [files, setFiles] = useState<GalleryFile[]>([]);
+  const [cachedFiles, setCachedFiles] = useState<GalleryFile[]>([]);
   const [loadedCount, setLoadedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [staggerWindow, setStaggerWindow] = useState<StaggerWindow>({
+    start: 0,
+    epoch: 0,
+  });
   const scopeRef = useRef<{ userId: string; homeId: string } | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isLoadingMoreRef = useRef(false);
   const isPrefetchingRef = useRef(false);
   const lastPrefetchedStartRef = useRef(-1);
+  const fileObjectByPathRef = useRef<Map<string, GalleryFile>>(new Map());
   const loadingRef = useRef(loading);
 
   loadingRef.current = loading;
+
+  const visibleSlice = useMemo(
+    () => buildVisibleGallerySlice(cachedFiles, loadedCount),
+    [cachedFiles, loadedCount]
+  );
+
+  const fileIndexByName = useMemo(() => {
+    const map = new Map<string, number>();
+    cachedFiles.forEach((f, index) => map.set(f.name, index));
+    return map;
+  }, [cachedFiles]);
 
   const signBatch = useCallback(
     async (userId: string, homeId: string, paths: string[]) => {
@@ -128,18 +290,32 @@ export default function GalleryPage() {
       }
 
       const signed = await signBatch(userId, homeId, batch);
-      setFiles((prev) => (append ? [...prev, ...signed] : signed));
+      const memoized = memoizeGalleryFiles(
+        fileObjectByPathRef.current,
+        batch,
+        signed
+      );
       const end = start + batch.length;
-      setLoadedCount(end);
+
+      await scheduleGalleryDomUpdate(() => {
+        setCachedFiles((prev) =>
+          append ? [...prev, ...memoized] : memoized
+        );
+        setStaggerWindow((prev) => ({ start, epoch: prev.epoch + 1 }));
+        setLoadedCount(end);
+      });
+
       return end;
     },
     [signBatch]
   );
 
   const resetGallery = useCallback(() => {
+    fileObjectByPathRef.current.clear();
     setAllPaths([]);
-    setFiles([]);
+    setCachedFiles([]);
     setLoadedCount(0);
+    setStaggerWindow({ start: 0, epoch: 0 });
     setError(null);
   }, []);
 
@@ -174,8 +350,10 @@ export default function GalleryPage() {
 
     setLoading(true);
     setError(null);
-    setFiles([]);
+    fileObjectByPathRef.current.clear();
+    setCachedFiles([]);
     setLoadedCount(0);
+    setStaggerWindow({ start: 0, epoch: 0 });
     lastPrefetchedStartRef.current = -1;
 
     try {
@@ -251,7 +429,7 @@ export default function GalleryPage() {
   }, [state, allPaths, loadedCount, loadMorePaths, prefetchNextBatch]);
 
   const hasMore = loadedCount < allPaths.length;
-  const showGrid = !loading && files.length > 0;
+  const showGrid = !loading && cachedFiles.length > 0;
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
@@ -322,7 +500,7 @@ export default function GalleryPage() {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container gallery-page">
       <h1 className="dashboard-title">Gallery</h1>
 
       {error ? (
@@ -354,7 +532,7 @@ export default function GalleryPage() {
         </label>
       </section>
 
-      {!loading && files.length === 0 ? (
+      {!loading && cachedFiles.length === 0 ? (
         <p className="dashboard-subtitle" style={{ margin: "16px 0 0" }}>
           No images uploaded
         </p>
@@ -366,19 +544,37 @@ export default function GalleryPage() {
           aria-label="Gallery thumbnails"
           style={{ marginTop: 16 }}
         >
-          {files.map((file) => (
-            <li key={file.name} className="gallery-grid-item">
-              <img
-                src={file.url}
-                alt=""
-                className="gallery-grid-img"
-                style={{
-                  width: 100,
-                  height: 100,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                }}
-                loading="lazy"
+          {visibleSlice.head.map((file) => (
+            <li key={`head-${file.name}`} className="gallery-grid-item">
+              <GalleryGridImage
+                file={file}
+                globalIndex={fileIndexByName.get(file.name) ?? 0}
+                staggerWindow={staggerWindow}
+              />
+            </li>
+          ))}
+          {visibleSlice.midSpacerPx > 0 ? (
+            <li
+              key="gallery-mid-spacer"
+              aria-hidden
+              className="gallery-grid-spacer"
+              style={{
+                gridColumn: "1 / -1",
+                height: visibleSlice.midSpacerPx,
+                margin: 0,
+                padding: 0,
+                border: "none",
+                background: "transparent",
+                listStyle: "none",
+              }}
+            />
+          ) : null}
+          {visibleSlice.tail.map((file) => (
+            <li key={`tail-${file.name}`} className="gallery-grid-item">
+              <GalleryGridImage
+                file={file}
+                globalIndex={fileIndexByName.get(file.name) ?? 0}
+                staggerWindow={staggerWindow}
               />
             </li>
           ))}
@@ -393,9 +589,16 @@ export default function GalleryPage() {
         />
       ) : null}
 
-      {loadingMore ? (
-        <p className="dashboard-subtitle" style={{ margin: "8px 0 0" }}>
-          Loading more…
+      {showGrid && hasMore ? (
+        <p
+          className={
+            loadingMore
+              ? "dashboard-subtitle gallery-loading-more gallery-loading-more--visible"
+              : "dashboard-subtitle gallery-loading-more"
+          }
+          aria-live="polite"
+        >
+          {loadingMore ? "Loading more…" : "\u00a0"}
         </p>
       ) : null}
     </div>

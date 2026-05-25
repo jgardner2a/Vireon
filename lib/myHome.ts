@@ -1,3 +1,4 @@
+import { invalidateDashboardHomesCache } from "@/lib/dashboard/dashboardContext";
 import { getDashboardState } from "@/lib/dashboard/dashboardOrchestrator";
 import {
   mapHomeRow,
@@ -114,6 +115,7 @@ export async function setCurrentHome(
   }
 
   invalidateHomeCache();
+  invalidateDashboardHomesCache();
   return fetchMyHomeData();
 }
 
@@ -163,6 +165,7 @@ export async function createHome(
   }
 
   invalidateHomeCache();
+  invalidateDashboardHomesCache();
   const refreshed = await fetchMyHomeData();
   if (!refreshed.ok) {
     return refreshed;

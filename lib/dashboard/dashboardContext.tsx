@@ -14,6 +14,18 @@ import {
   getDashboardState,
   type DashboardState,
 } from "@/lib/dashboard/dashboardOrchestrator";
+import type { Home } from "@/lib/home/homeMapper";
+import {
+  getCachedCurrentHomeId,
+  getCachedUserId,
+} from "@/lib/sessionCache";
+
+/** Set by createHome / setCurrentHome; next provider refresh refetches homes. */
+let pendingHomesCacheInvalidation = false;
+
+export function invalidateDashboardHomesCache(): void {
+  pendingHomesCacheInvalidation = true;
+}
 
 type DashboardContextValue = {
   state: DashboardState | null;
@@ -29,6 +41,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const refreshInFlightRef = useRef(false);
+  const homesCacheRef = useRef<Home[]>([]);
+  const homesLoadedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) {
@@ -40,15 +54,48 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const next = await getDashboardState();
+      if (pendingHomesCacheInvalidation) {
+        homesLoadedRef.current = false;
+        pendingHomesCacheInvalidation = false;
+      }
 
-      if (!next) {
+      if (!homesLoadedRef.current) {
+        const next = await getDashboardState();
+
+        if (!next) {
+          setState(null);
+          setError("Not signed in.");
+          return;
+        }
+
+        homesCacheRef.current = next.homes;
+        homesLoadedRef.current = true;
+
+        setState({
+          ...next,
+          homes: homesCacheRef.current,
+        });
+        return;
+      }
+
+      const userId = await getCachedUserId();
+
+      if (!userId) {
         setState(null);
         setError("Not signed in.");
         return;
       }
 
-      setState(next);
+      const currentHomeId = await getCachedCurrentHomeId(userId);
+      const homes = homesCacheRef.current;
+      const currentHome = homes.find((h) => h.id === currentHomeId) ?? null;
+
+      setState({
+        userId,
+        homes,
+        currentHomeId,
+        currentHome,
+      });
     } catch (err) {
       setState(null);
       setError(
