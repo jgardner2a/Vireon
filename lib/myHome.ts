@@ -1,4 +1,27 @@
+import { getCurrentUserId } from "@/lib/auth/getCurrentUserId";
+import { getActiveHomeId } from "@/lib/home/getActiveHomeId";
+import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
+import {
+  getCurrentHome,
+  getPreviousHomes,
+} from "./homeContext";
 import { supabase } from "./supabaseClient";
+
+/** Home-scoped gallery count for My Home summary (not used by Gallery page). */
+export async function getGalleryFileCount(
+  userId: string,
+  homeId: string
+): Promise<number> {
+  const { data, error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .list(storagePath(userId, homeId), { limit: 100 });
+
+  if (error) {
+    return 0;
+  }
+
+  return data?.length ?? 0;
+}
 
 export type Home = {
   id: string;
@@ -21,6 +44,8 @@ type HomeRow = {
 export type MyHomeData = {
   currentHome: Home | null;
   previousHomes: Home[];
+  homes: Home[];
+  currentHomeId: string | null;
 };
 
 export type CreateHomeInput = {
@@ -51,33 +76,26 @@ function mapHomeRow(row: HomeRow): Home {
   };
 }
 
+export async function getHomeData(): Promise<
+  | { ok: true; data: MyHomeData }
+  | { ok: false; message: string }
+> {
+  return fetchMyHomeData();
+}
+
 export async function fetchMyHomeData(): Promise<
   | { ok: true; data: MyHomeData }
   | { ok: false; message: string }
 > {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId();
 
-  if (userError) {
-    console.error("[myHome] getUser", userError);
-    return { ok: false, message: userError.message || "Could not load user." };
-  }
-
-  if (!user?.id) {
+  if (!userId) {
     return { ok: false, message: "Not signed in." };
   }
 
-  const userId = user.id;
-
-  const [homesResult, stateResult] = await Promise.all([
+  const [homesResult, currentHomeId] = await Promise.all([
     supabase.from("homes").select("*").eq("user_id", userId),
-    supabase
-      .from("user_state")
-      .select("current_home_id")
-      .eq("user_id", userId)
-      .maybeSingle(),
+    getActiveHomeId(userId),
   ]);
 
   if (homesResult.error) {
@@ -88,44 +106,61 @@ export async function fetchMyHomeData(): Promise<
     };
   }
 
-  if (stateResult.error) {
-    console.error("[myHome] fetch user_state", stateResult.error);
+  const rows = (homesResult.data ?? []) as HomeRow[];
+  const homes = rows.map(mapHomeRow);
+  const userState = { current_home_id: currentHomeId };
+  const currentHome = getCurrentHome(homes, userState);
+  const previousHomes = getPreviousHomes(homes, currentHomeId);
+
+  return {
+    ok: true,
+    data: { currentHome, previousHomes, homes, currentHomeId },
+  };
+}
+
+export async function setCurrentHome(
+  homeId: string
+): Promise<
+  | { ok: true; data: MyHomeData }
+  | { ok: false; message: string }
+> {
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return { ok: false, message: "Not signed in." };
+  }
+
+  const { error: stateError } = await supabase.from("user_state").upsert(
+    {
+      user_id: userId,
+      current_home_id: homeId,
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (stateError) {
+    console.error("[myHome] upsert user_state", stateError);
     return {
       ok: false,
-      message: stateResult.error.message || "Could not load home state.",
+      message: stateError.message || "Could not set current home.",
     };
   }
 
-  const rows = (homesResult.data ?? []) as HomeRow[];
-  const homes = rows.map(mapHomeRow);
-  const currentHomeId = stateResult.data?.current_home_id ?? null;
-
-  const currentHome =
-    currentHomeId != null
-      ? (homes.find((h) => h.id === currentHomeId) ?? null)
-      : null;
-
-  const previousHomes = homes.filter((h) => h.id !== currentHome?.id);
-
-  return { ok: true, data: { currentHome, previousHomes } };
+  return fetchMyHomeData();
 }
 
 export async function createHome(
   input: CreateHomeInput
 ): Promise<
-  | { ok: true; data: MyHomeData; wasFirstHome: boolean }
+  | { ok: true; data: MyHomeData; createdHome: Home }
   | { ok: false; message: string }
 > {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId();
 
-  if (userError || !user?.id) {
+  if (!userId) {
     return { ok: false, message: "Not signed in." };
   }
 
-  const userId = user.id;
   const name = input.name.trim();
   const address = input.address.trim();
   const apartmentNumber = input.apartmentNumber.trim();
@@ -136,21 +171,6 @@ export async function createHome(
   if (!name || !address || !city || !state || !zip) {
     return { ok: false, message: "Please fill in all required fields." };
   }
-
-  const existing = await supabase
-    .from("homes")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
-
-  if (existing.error) {
-    console.error("[myHome] count homes", existing.error);
-    return {
-      ok: false,
-      message: existing.error.message || "Could not verify homes.",
-    };
-  }
-
-  const isFirstHome = (existing.count ?? 0) === 0;
 
   const { data: inserted, error: insertError } = await supabase
     .from("homes")
@@ -174,28 +194,14 @@ export async function createHome(
     };
   }
 
-  if (isFirstHome) {
-    const { error: stateError } = await supabase.from("user_state").upsert(
-      {
-        user_id: userId,
-        current_home_id: inserted.id,
-      },
-      { onConflict: "user_id" }
-    );
-
-    if (stateError) {
-      console.error("[myHome] upsert user_state", stateError);
-      return {
-        ok: false,
-        message: stateError.message || "Home created but could not set current home.",
-      };
-    }
-  }
-
   const refreshed = await fetchMyHomeData();
   if (!refreshed.ok) {
     return refreshed;
   }
 
-  return { ok: true, data: refreshed.data, wasFirstHome: isFirstHome };
+  return {
+    ok: true,
+    data: refreshed.data,
+    createdHome: mapHomeRow(inserted as HomeRow),
+  };
 }

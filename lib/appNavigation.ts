@@ -16,6 +16,10 @@ export const APP_TOP_NAV_ITEMS: AppTopNavItem[] = [
 export const ROUTE_HOME = "/";
 export const ROUTE_DASHBOARD = "/dashboard";
 export const ROUTE_DASHBOARD_MY_HOME = "/dashboard/my-home";
+export const ROUTE_DASHBOARD_MY_HOME_GALLERY = "/dashboard/my-home/gallery";
+export const ROUTE_DASHBOARD_MY_HOME_ISSUES = "/dashboard/my-home/issues";
+export const ROUTE_DASHBOARD_MY_HOME_NOTES = "/dashboard/my-home/notes";
+export const ROUTE_DASHBOARD_MY_HOME_VAULT = "/dashboard/my-home/vault";
 export const ROUTE_LOGIN = "/login";
 
 export const DEFAULT_SIGN_IN_REDIRECT = ROUTE_DASHBOARD;
