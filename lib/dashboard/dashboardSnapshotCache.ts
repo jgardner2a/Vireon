@@ -52,6 +52,17 @@ function removeSessionStorage(key: string): void {
   }
 }
 
+function normalizeSnapshotMetrics(
+  metrics: HomeDashboardMetrics
+): HomeDashboardMetrics {
+  return {
+    galleryCount: metrics.galleryCount,
+    maintenanceCount: metrics.maintenanceCount,
+    notesCount:
+      typeof metrics.notesCount === "number" ? metrics.notesCount : 0,
+  };
+}
+
 function isValidSnapshot(
   value: unknown,
   userId: string,
@@ -71,6 +82,13 @@ function isValidSnapshot(
     typeof snapshot.metrics.galleryCount === "number" &&
     typeof snapshot.metrics.maintenanceCount === "number"
   );
+}
+
+function withNormalizedMetrics(snapshot: DashboardSnapshot): DashboardSnapshot {
+  return {
+    ...snapshot,
+    metrics: normalizeSnapshotMetrics(snapshot.metrics),
+  };
 }
 
 function clearAllSessionSnapshots(): void {
@@ -124,7 +142,7 @@ export function getDashboardSnapshot(
 
   const fromMemory = memoryCache.get(key);
   if (fromMemory && isValidSnapshot(fromMemory, userId, homeId)) {
-    return fromMemory;
+    return withNormalizedMetrics(fromMemory);
   }
 
   const stored = readSessionStorage(sessionStorageKey(userId, homeId));
@@ -139,8 +157,9 @@ export function getDashboardSnapshot(
       return null;
     }
 
-    memoryCache.set(key, parsed);
-    return parsed;
+    const normalized = withNormalizedMetrics(parsed);
+    memoryCache.set(key, normalized);
+    return normalized;
   } catch {
     removeSessionStorage(sessionStorageKey(userId, homeId));
     return null;

@@ -57,7 +57,14 @@ const HOME_FEATURES: HomeFeature[] = [
         ? `${context.metrics.maintenanceCount} Logs`
         : null,
   },
-  { id: "notes", name: "Notes", getSummary: () => null },
+  {
+    id: "notes",
+    name: "Notes",
+    getSummary: (context) =>
+      context.metrics?.notesCount
+        ? `${context.metrics.notesCount} Notes`
+        : null,
+  },
   { id: "vault", name: "Vault", getSummary: () => null },
 ];
 

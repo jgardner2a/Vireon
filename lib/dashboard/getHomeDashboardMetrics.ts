@@ -1,9 +1,11 @@
 import { getGalleryFileCount } from "@/lib/myHome";
+import { getNotesCount } from "@/lib/notes/getNotesCount";
 import { supabase } from "@/lib/supabaseClient";
 
 export type HomeDashboardMetrics = {
   galleryCount: number;
   maintenanceCount: number;
+  notesCount: number;
 };
 
 async function getMaintenanceLogCount(
@@ -28,10 +30,11 @@ export async function getHomeDashboardMetrics(
   userId: string,
   homeId: string
 ): Promise<HomeDashboardMetrics> {
-  const [galleryCount, maintenanceCount] = await Promise.all([
+  const [galleryCount, maintenanceCount, notesCount] = await Promise.all([
     getGalleryFileCount(userId, homeId),
     getMaintenanceLogCount(userId, homeId),
+    getNotesCount(userId, homeId),
   ]);
 
-  return { galleryCount, maintenanceCount };
+  return { galleryCount, maintenanceCount, notesCount };
 }
