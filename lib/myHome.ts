@@ -1,22 +1,32 @@
+import { getDashboardState } from "@/lib/dashboard/dashboardOrchestrator";
 import {
-  getCachedCurrentHomeId,
+  mapHomeRow,
+  type Home,
+  type HomeRow,
+} from "@/lib/home/homeMapper";
+import {
   getCachedUserId,
   invalidateHomeCache,
 } from "@/lib/sessionCache";
 import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
 import { getCachedStorageList } from "@/lib/storageCache";
-import { getCurrentHome } from "./homeContext";
 import { supabase } from "./supabaseClient";
+
+export type { Home } from "@/lib/home/homeMapper";
 
 /** Home-scoped gallery count for My Home summary (not used by Gallery page). */
 export async function getGalleryFileCount(
   userId: string,
   homeId: string
 ): Promise<number> {
-  const { data, error } = await getCachedStorageList(userId, homeId, () =>
-    supabase.storage
-      .from(STORAGE_BUCKET)
-      .list(storagePath(userId, homeId), { limit: 100 })
+  const { data, error } = await getCachedStorageList(
+    userId,
+    homeId,
+    "summary",
+    () =>
+      supabase.storage
+        .from(STORAGE_BUCKET)
+        .list(storagePath(userId, homeId), { limit: 100 })
   );
 
   if (error) {
@@ -25,24 +35,6 @@ export async function getGalleryFileCount(
 
   return data?.length ?? 0;
 }
-
-export type Home = {
-  id: string;
-  name: string;
-  address: string;
-};
-
-type HomeRow = {
-  id: string;
-  user_id: string;
-  name: string;
-  address: string;
-  apartment_number: string | null;
-  city: string;
-  state: string;
-  zip: string;
-  created_at: string;
-};
 
 export type MyHomeData = {
   currentHome: Home | null;
@@ -59,25 +51,6 @@ export type CreateHomeInput = {
   zip: string;
 };
 
-function formatHomeAddress(row: HomeRow): string {
-  const parts: string[] = [row.address];
-  if (row.apartment_number?.trim()) {
-    parts.push(`Apt ${row.apartment_number.trim()}`);
-  }
-  const cityState = [row.city, row.state].filter(Boolean).join(", ");
-  if (cityState) parts.push(cityState);
-  if (row.zip?.trim()) parts.push(row.zip.trim());
-  return parts.join(", ");
-}
-
-function mapHomeRow(row: HomeRow): Home {
-  return {
-    id: row.id,
-    name: row.name,
-    address: formatHomeAddress(row),
-  };
-}
-
 export async function getHomeData(): Promise<
   | { ok: true; data: MyHomeData }
   | { ok: false; message: string }
@@ -89,34 +62,27 @@ export async function fetchMyHomeData(): Promise<
   | { ok: true; data: MyHomeData }
   | { ok: false; message: string }
 > {
-  const userId = await getCachedUserId();
+  try {
+    const dashboard = await getDashboardState();
 
-  if (!userId) {
-    return { ok: false, message: "Not signed in." };
-  }
+    if (!dashboard) {
+      return { ok: false, message: "Not signed in." };
+    }
 
-  const [homesResult, currentHomeId] = await Promise.all([
-    supabase.from("homes").select("*").eq("user_id", userId),
-    getCachedCurrentHomeId(userId),
-  ]);
-
-  if (homesResult.error) {
-    console.error("[myHome] fetch homes", homesResult.error);
     return {
-      ok: false,
-      message: homesResult.error.message || "Could not load homes.",
+      ok: true,
+      data: {
+        currentHome: dashboard.currentHome,
+        homes: dashboard.homes,
+        currentHomeId: dashboard.currentHomeId,
+      },
     };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not load homes.";
+    console.error("[myHome] fetch homes", error);
+    return { ok: false, message };
   }
-
-  const rows = (homesResult.data ?? []) as HomeRow[];
-  const homes = rows.map(mapHomeRow);
-  const userState = { current_home_id: currentHomeId };
-  const currentHome = getCurrentHome(homes, userState);
-
-  return {
-    ok: true,
-    data: { currentHome, homes, currentHomeId },
-  };
 }
 
 export async function setCurrentHome(

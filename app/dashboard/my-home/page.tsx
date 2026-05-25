@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ROUTE_DASHBOARD_MY_HOME } from "@/lib/appNavigation";
-import { getCachedUserId } from "@/lib/sessionCache";
+import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   createHome,
   getGalleryFileCount,
-  getHomeData,
   setCurrentHome as activateHome,
   type Home,
 } from "@/lib/myHome";
@@ -92,79 +91,45 @@ function HomeCardContent({ home }: { home: Home }) {
 
 export default function MyHomePage() {
   const pathname = usePathname();
-  const loadInFlightRef = useRef(false);
-  const [homes, setHomes] = useState<Home[]>([]);
-  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
+  const { state, loading, error: dashboardError, refresh } = useDashboardState();
   const [showAddHomeModal, setShowAddHomeModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gallerySummary, setGallerySummary] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    if (loadInFlightRef.current) {
-      return;
-    }
-
-    loadInFlightRef.current = true;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await getHomeData();
-
-      if (!result.ok) {
-        setError(result.message);
-        setHomes([]);
-        setCurrentHomeId(null);
-        setGallerySummary(null);
-      } else {
-        setHomes(result.data.homes);
-        setCurrentHomeId(result.data.currentHomeId);
-      }
-    } finally {
-      loadInFlightRef.current = false;
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
+  const homes = state?.homes ?? [];
+  const currentHomeId = state?.currentHomeId ?? null;
+  const currentHome = state?.currentHome ?? null;
 
   useEffect(() => {
     const onFocus = () => {
-      void loadData();
+      void refresh();
     };
 
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [loadData]);
+  }, [refresh]);
 
   useEffect(() => {
     if (pathname === ROUTE_DASHBOARD_MY_HOME) {
-      void loadData();
+      void refresh();
     }
-  }, [pathname, loadData]);
+  }, [pathname, refresh]);
 
   useEffect(() => {
-    if (!currentHomeId) {
+    if (!state?.userId || !currentHomeId) {
       setGallerySummary(null);
       return;
     }
 
     void (async () => {
-      const userId = await getCachedUserId();
-      if (!userId) {
-        setGallerySummary(null);
-        return;
-      }
-
-      const fileCount = await getGalleryFileCount(userId, currentHomeId);
+      const fileCount = await getGalleryFileCount(state.userId, currentHomeId);
       setGallerySummary(fileCount > 0 ? `${fileCount} Images` : null);
     })();
-  }, [currentHomeId]);
+  }, [state?.userId, currentHomeId]);
+
+  const displayError = error ?? dashboardError;
 
   const handleCreateHome = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,14 +159,11 @@ export default function MyHomePage() {
       return;
     }
 
-    await loadData();
+    await refresh();
     setSaving(false);
     setShowAddHomeModal(false);
     setForm(EMPTY_FORM);
   };
-
-  const currentHome =
-    homes.find((h) => h.id === currentHomeId) ?? null;
 
   const modalOpen = showAddHomeModal;
 
@@ -232,9 +194,9 @@ export default function MyHomePage() {
           </button>
         </header>
 
-        {error && !modalOpen ? (
+        {displayError && !modalOpen ? (
           <p className="my-home-error" role="alert">
-            {error}
+            {displayError}
           </p>
         ) : null}
 
@@ -336,9 +298,9 @@ export default function MyHomePage() {
                   />
                 </div>
 
-                {error ? (
+                {displayError ? (
                   <p className="my-home-error" role="alert">
-                    {error}
+                    {displayError}
                   </p>
                 ) : null}
 
@@ -376,9 +338,9 @@ export default function MyHomePage() {
         <h1 className="my-home-page-title">My Home</h1>
       </header>
 
-      {error && !modalOpen ? (
+      {displayError && !modalOpen ? (
         <p className="my-home-error" role="alert">
-          {error}
+          {displayError}
         </p>
       ) : null}
 

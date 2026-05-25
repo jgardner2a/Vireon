@@ -12,6 +12,7 @@ import {
   ROUTE_DASHBOARD_MY_HOME_NOTES,
   ROUTE_DASHBOARD_MY_HOME_VAULT,
 } from "@/lib/appNavigation";
+import { DashboardProvider } from "@/lib/dashboard/dashboardContext";
 import { useAuthSession } from "@/lib/useAuthSession";
 import "./dashboard.css";
 
@@ -100,7 +101,9 @@ export default function DashboardLayout({
           </div>
         </nav>
       </aside>
-      <main className="dashboard-main">{children}</main>
+      <main className="dashboard-main">
+        <DashboardProvider>{children}</DashboardProvider>
+      </main>
     </div>
   );
 }

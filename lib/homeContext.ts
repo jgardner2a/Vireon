@@ -1,4 +1,4 @@
-import type { Home } from "./myHome";
+import type { Home } from "./home/homeMapper";
 
 /*
 HOME CONTEXT CONTRACT:
