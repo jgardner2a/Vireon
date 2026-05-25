@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   loginHref,
   ROUTE_DASHBOARD,
+  ROUTE_DASHBOARD_COMMUNICATIONS,
   ROUTE_DASHBOARD_GALLERY,
   ROUTE_DASHBOARD_MAINTENANCE,
   ROUTE_DASHBOARD_NOTES,
@@ -50,6 +51,7 @@ export default function DashboardLayout({
   const previousHomesActive = onDashboardRoute && hash === "#previous-homes";
   const galleryActive = pathname === ROUTE_DASHBOARD_GALLERY;
   const maintenanceActive = pathname === ROUTE_DASHBOARD_MAINTENANCE;
+  const communicationsActive = pathname === ROUTE_DASHBOARD_COMMUNICATIONS;
   const notesActive = pathname === ROUTE_DASHBOARD_NOTES;
   const vaultActive = pathname === ROUTE_DASHBOARD_VAULT;
 
@@ -89,6 +91,12 @@ export default function DashboardLayout({
                   className={navLinkClass(maintenanceActive)}
                 >
                   Maintenance
+                </Link>
+                <Link
+                  href={ROUTE_DASHBOARD_COMMUNICATIONS}
+                  className={navLinkClass(communicationsActive)}
+                >
+                  Communications
                 </Link>
                 <Link
                   href={ROUTE_DASHBOARD_NOTES}

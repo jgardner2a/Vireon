@@ -58,6 +58,10 @@ function normalizeSnapshotMetrics(
   return {
     galleryCount: metrics.galleryCount,
     maintenanceCount: metrics.maintenanceCount,
+    communicationsCount:
+      typeof metrics.communicationsCount === "number"
+        ? metrics.communicationsCount
+        : 0,
     notesCount:
       typeof metrics.notesCount === "number" ? metrics.notesCount : 0,
   };

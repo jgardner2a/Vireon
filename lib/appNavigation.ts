@@ -38,6 +38,8 @@ export const ROUTE_DASHBOARD_MAINTENANCE = "/dashboard/maintenance";
 
 export const ROUTE_DASHBOARD_NOTES = "/dashboard/notes";
 
+export const ROUTE_DASHBOARD_COMMUNICATIONS = "/dashboard/communications";
+
 export const ROUTE_DASHBOARD_VAULT = "/dashboard/vault";
 
 export const ROUTE_LOGIN = "/login";

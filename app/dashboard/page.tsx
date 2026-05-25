@@ -58,6 +58,14 @@ const HOME_FEATURES: HomeFeature[] = [
         : null,
   },
   {
+    id: "communications",
+    name: "Communications",
+    getSummary: (context) =>
+      context.metrics?.communicationsCount
+        ? `${context.metrics.communicationsCount} Communications`
+        : null,
+  },
+  {
     id: "notes",
     name: "Notes",
     getSummary: (context) =>
