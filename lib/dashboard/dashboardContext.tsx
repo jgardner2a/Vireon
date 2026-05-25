@@ -19,6 +19,7 @@ import {
   getCachedCurrentHomeId,
   getCachedUserId,
 } from "@/lib/sessionCache";
+import { useAuthSession } from "@/lib/useAuthSession";
 
 /** Set by createHome / setCurrentHome; next provider refresh refetches homes. */
 let pendingHomesCacheInvalidation = false;
@@ -37,12 +38,14 @@ type DashboardContextValue = {
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
+  const { userId: authUserId } = useAuthSession();
   const [state, setState] = useState<DashboardState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const refreshInFlightRef = useRef(false);
   const homesCacheRef = useRef<Home[]>([]);
   const homesLoadedRef = useRef(false);
+  const previousUserIdRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) {
@@ -112,6 +115,20 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const userId = authUserId;
+
+    if (userId && previousUserIdRef.current !== userId) {
+      homesCacheRef.current = [];
+      homesLoadedRef.current = false;
+      setState(null);
+      setError(null);
+      void refresh();
+    }
+
+    previousUserIdRef.current = userId;
+  }, [authUserId, refresh]);
 
   return (
     <DashboardContext.Provider value={{ state, loading, error, refresh }}>

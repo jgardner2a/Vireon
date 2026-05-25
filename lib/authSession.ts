@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 
+import { clearSessionCache } from "./sessionCache";
 import { supabase } from "./supabaseClient";
 
 export type AuthSession = {
@@ -87,5 +88,6 @@ export async function clearAuthSession(): Promise<void> {
     console.error("[auth] signOut", error);
   }
   applySessionMirror(null);
+  clearSessionCache();
   notifyAuthChanged();
 }

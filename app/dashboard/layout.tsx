@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   loginHref,
   ROUTE_DASHBOARD,
-  ROUTE_DASHBOARD_MY_HOME,
-  ROUTE_DASHBOARD_MY_HOME_GALLERY,
-  ROUTE_DASHBOARD_MY_HOME_ISSUES,
-  ROUTE_DASHBOARD_MY_HOME_NOTES,
-  ROUTE_DASHBOARD_MY_HOME_VAULT,
+  ROUTE_DASHBOARD_GALLERY,
+  ROUTE_DASHBOARD_ISSUES,
+  ROUTE_DASHBOARD_NOTES,
+  ROUTE_DASHBOARD_VAULT,
 } from "@/lib/appNavigation";
 import { DashboardProvider } from "@/lib/dashboard/dashboardContext";
 import { useAuthSession } from "@/lib/useAuthSession";
@@ -28,6 +27,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [hash, setHash] = useState("");
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthSession();
 
   useEffect(() => {
@@ -38,12 +38,20 @@ export default function DashboardLayout({
     window.location.href = loginHref(ROUTE_DASHBOARD);
   }, [isAuthLoading, isAuthenticated]);
 
-  const overviewActive = pathname === ROUTE_DASHBOARD;
-  const myHomeActive = pathname === ROUTE_DASHBOARD_MY_HOME;
-  const galleryActive = pathname === ROUTE_DASHBOARD_MY_HOME_GALLERY;
-  const issuesActive = pathname === ROUTE_DASHBOARD_MY_HOME_ISSUES;
-  const notesActive = pathname === ROUTE_DASHBOARD_MY_HOME_NOTES;
-  const vaultActive = pathname === ROUTE_DASHBOARD_MY_HOME_VAULT;
+  useEffect(() => {
+    const syncHash = () => setHash(window.location.hash);
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
+
+  const onDashboardRoute = pathname === ROUTE_DASHBOARD;
+  const dashboardActive = onDashboardRoute && hash === "";
+  const previousHomesActive = onDashboardRoute && hash === "#previous-homes";
+  const galleryActive = pathname === ROUTE_DASHBOARD_GALLERY;
+  const issuesActive = pathname === ROUTE_DASHBOARD_ISSUES;
+  const notesActive = pathname === ROUTE_DASHBOARD_NOTES;
+  const vaultActive = pathname === ROUTE_DASHBOARD_VAULT;
 
   return (
     <div className="dashboard-shell">
@@ -61,42 +69,47 @@ export default function DashboardLayout({
         <nav className="dashboard-nav" aria-label="Dashboard">
           <Link
             href={ROUTE_DASHBOARD}
-            className={navLinkClass(overviewActive)}
+            className={navLinkClass(dashboardActive)}
           >
-            Overview
+            Dashboard
           </Link>
 
-          <Link
-            href={ROUTE_DASHBOARD_MY_HOME}
-            className={navLinkClass(myHomeActive)}
-          >
-            My Home
-          </Link>
+          <div className="dashboard-nav-sub" aria-label="Dashboard sections">
+            <div className="dashboard-nav-section" aria-label="My Home">
+              <p className="dashboard-nav-section-title">My Home</p>
+              <div className="dashboard-nav-sub">
+                <Link
+                  href={ROUTE_DASHBOARD_GALLERY}
+                  className={navLinkClass(galleryActive)}
+                >
+                  Gallery
+                </Link>
+                <Link
+                  href={ROUTE_DASHBOARD_ISSUES}
+                  className={navLinkClass(issuesActive)}
+                >
+                  Issues
+                </Link>
+                <Link
+                  href={ROUTE_DASHBOARD_NOTES}
+                  className={navLinkClass(notesActive)}
+                >
+                  Notes
+                </Link>
+                <Link
+                  href={ROUTE_DASHBOARD_VAULT}
+                  className={navLinkClass(vaultActive)}
+                >
+                  Vault
+                </Link>
+              </div>
+            </div>
 
-          <div className="dashboard-nav-sub">
             <Link
-              href={ROUTE_DASHBOARD_MY_HOME_GALLERY}
-              className={navLinkClass(galleryActive)}
+              href={`${ROUTE_DASHBOARD}#previous-homes`}
+              className={navLinkClass(previousHomesActive)}
             >
-              Gallery
-            </Link>
-            <Link
-              href={ROUTE_DASHBOARD_MY_HOME_ISSUES}
-              className={navLinkClass(issuesActive)}
-            >
-              Issues
-            </Link>
-            <Link
-              href={ROUTE_DASHBOARD_MY_HOME_NOTES}
-              className={navLinkClass(notesActive)}
-            >
-              Notes
-            </Link>
-            <Link
-              href={ROUTE_DASHBOARD_MY_HOME_VAULT}
-              className={navLinkClass(vaultActive)}
-            >
-              Vault
+              Previous Homes
             </Link>
           </div>
         </nav>

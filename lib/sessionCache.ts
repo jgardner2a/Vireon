@@ -110,3 +110,11 @@ export function invalidateHomeCache(): void {
   cachedCurrentHomeId = null;
   removeSessionStorage(HOME_ID_KEY);
 }
+
+/** Full reset on logout — memory and sessionStorage identity/home caches. */
+export function clearSessionCache(): void {
+  cachedUserId = null;
+  cachedCurrentHomeId = null;
+  removeSessionStorage(USER_ID_KEY);
+  removeSessionStorage(HOME_ID_KEY);
+}

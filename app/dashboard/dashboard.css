@@ -70,6 +70,20 @@ html {
   border-left: 1px solid #eee;
 }
 
+.dashboard-nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-nav-section-title {
+  margin: 0;
+  padding: 6px 10px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
 .dashboard-nav-label {
   font-size: 11px;
   text-transform: uppercase;
