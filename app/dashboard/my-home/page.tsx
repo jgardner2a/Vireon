@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { getCurrentUserId } from "@/lib/auth/getCurrentUserId";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { ROUTE_DASHBOARD_MY_HOME } from "@/lib/appNavigation";
+import { getCachedUserId } from "@/lib/sessionCache";
 import {
   createHome,
   getGalleryFileCount,
@@ -26,7 +28,6 @@ const EMPTY_FORM = {
 /** Snapshot context from fetchMyHomeData — extend getSummary when new fields exist. */
 type HomeFeatureContext = {
   currentHome: Home;
-  previousHomes: Home[];
   homes: Home[];
   currentHomeId: string | null;
   gallerySummary: string | null;
@@ -90,12 +91,11 @@ function HomeCardContent({ home }: { home: Home }) {
 }
 
 export default function MyHomePage() {
-  const [currentHome, setCurrentHome] = useState<Home | null>(null);
-  const [previousHomes, setPreviousHomes] = useState<Home[]>([]);
+  const pathname = usePathname();
+  const loadInFlightRef = useRef(false);
   const [homes, setHomes] = useState<Home[]>([]);
   const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [showAddHomeModal, setShowAddHomeModal] = useState(false);
-  const [summaryHome, setSummaryHome] = useState<Home | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,31 +103,50 @@ export default function MyHomePage() {
   const [gallerySummary, setGallerySummary] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    if (loadInFlightRef.current) {
+      return;
+    }
+
+    loadInFlightRef.current = true;
     setLoading(true);
     setError(null);
 
-    const result = await getHomeData();
+    try {
+      const result = await getHomeData();
 
-    if (!result.ok) {
-      setError(result.message);
-      setCurrentHome(null);
-      setPreviousHomes([]);
-      setHomes([]);
-      setCurrentHomeId(null);
-      setGallerySummary(null);
-    } else {
-      setCurrentHome(result.data.currentHome);
-      setPreviousHomes(result.data.previousHomes);
-      setHomes(result.data.homes);
-      setCurrentHomeId(result.data.currentHomeId);
+      if (!result.ok) {
+        setError(result.message);
+        setHomes([]);
+        setCurrentHomeId(null);
+        setGallerySummary(null);
+      } else {
+        setHomes(result.data.homes);
+        setCurrentHomeId(result.data.currentHomeId);
+      }
+    } finally {
+      loadInFlightRef.current = false;
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void loadData();
+    };
+
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (pathname === ROUTE_DASHBOARD_MY_HOME) {
+      void loadData();
+    }
+  }, [pathname, loadData]);
 
   useEffect(() => {
     if (!currentHomeId) {
@@ -136,7 +155,7 @@ export default function MyHomePage() {
     }
 
     void (async () => {
-      const userId = await getCurrentUserId();
+      const userId = await getCachedUserId();
       if (!userId) {
         setGallerySummary(null);
         return;
@@ -181,7 +200,10 @@ export default function MyHomePage() {
     setForm(EMPTY_FORM);
   };
 
-  const modalOpen = showAddHomeModal || summaryHome !== null;
+  const currentHome =
+    homes.find((h) => h.id === currentHomeId) ?? null;
+
+  const modalOpen = showAddHomeModal;
 
   if (loading) {
     return (
@@ -381,79 +403,12 @@ export default function MyHomePage() {
           feature={feature}
           context={{
             currentHome,
-            previousHomes,
             homes,
             currentHomeId,
             gallerySummary,
           }}
         />
       ))}
-
-      <section
-        className="my-home-section"
-        aria-labelledby="previous-homes-heading"
-      >
-        <h2 id="previous-homes-heading" className="my-home-section-title">
-          Previous Homes
-        </h2>
-        {previousHomes.length === 0 ? (
-          <div className="my-home-card">
-            <p className="my-home-empty">No previous homes</p>
-          </div>
-        ) : (
-          <ul className="my-home-list" aria-label="Previous homes">
-            {previousHomes.map((home) => (
-              <li key={home.id}>
-                <button
-                  type="button"
-                  className="my-home-card"
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    font: "inherit",
-                  }}
-                  onClick={() => setSummaryHome(home)}
-                >
-                  <HomeCardContent home={home} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {summaryHome ? (
-        <div
-          className="my-home-modal-backdrop"
-          role="presentation"
-          onClick={() => setSummaryHome(null)}
-        >
-          <div
-            className="my-home-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="previous-home-summary-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="previous-home-summary-title" className="my-home-modal-title">
-              Previous home
-            </h2>
-            <div className="my-home-card">
-              <HomeCardContent home={summaryHome} />
-            </div>
-            <div className="my-home-modal-actions">
-              <button
-                type="button"
-                className="my-home-btn-primary"
-                onClick={() => setSummaryHome(null)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

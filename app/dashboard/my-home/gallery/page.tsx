@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getActiveHomeId } from "@/lib/home/getActiveHomeId";
+import {
+  getCachedCurrentHomeId,
+  getCachedUserId,
+} from "@/lib/sessionCache";
+import {
+  getCachedStorageList,
+  invalidateStorageCache,
+} from "@/lib/storageCache";
 import { supabase } from "@/lib/supabaseClient";
 
 const BUCKET = "uploads";
@@ -27,20 +34,16 @@ export default function GalleryPage() {
     setLoading(true);
     setError(null);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const userId = await getCachedUserId();
 
-    if (authError || !user) {
+    if (!userId) {
       setFiles([]);
-      setError(authError?.message ?? "Not signed in.");
+      setError("Not signed in.");
       setLoading(false);
       return;
     }
 
-    const userId = user.id;
-    const homeId = await getActiveHomeId(userId);
+    const homeId = await getCachedCurrentHomeId(userId);
 
     if (!homeId) {
       setFiles([]);
@@ -48,9 +51,14 @@ export default function GalleryPage() {
       return;
     }
 
-    const { data: listed, error: listError } = await supabase.storage
-      .from(BUCKET)
-      .list(`${userId}/${homeId}`, { limit: 100 });
+    const { data: listed, error: listError } = await getCachedStorageList(
+      userId,
+      homeId,
+      () =>
+        supabase.storage
+          .from(BUCKET)
+          .list(`${userId}/${homeId}`, { limit: 100 })
+    );
 
     if (listError) {
       setFiles([]);
@@ -102,19 +110,15 @@ export default function GalleryPage() {
     setUploading(true);
     setError(null);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const userId = await getCachedUserId();
 
-    if (authError || !user) {
-      setError(authError?.message ?? "Not signed in.");
+    if (!userId) {
+      setError("Not signed in.");
       setUploading(false);
       return;
     }
 
-    const userId = user.id;
-    const homeId = await getActiveHomeId(userId);
+    const homeId = await getCachedCurrentHomeId(userId);
 
     if (!homeId) {
       setError("No active home selected");
@@ -138,6 +142,7 @@ export default function GalleryPage() {
       }
     }
 
+    invalidateStorageCache(userId, homeId);
     setUploading(false);
     await loadFiles();
   };

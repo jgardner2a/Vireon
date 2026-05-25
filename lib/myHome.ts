@@ -1,10 +1,11 @@
-import { getCurrentUserId } from "@/lib/auth/getCurrentUserId";
-import { getActiveHomeId } from "@/lib/home/getActiveHomeId";
-import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
 import {
-  getCurrentHome,
-  getPreviousHomes,
-} from "./homeContext";
+  getCachedCurrentHomeId,
+  getCachedUserId,
+  invalidateHomeCache,
+} from "@/lib/sessionCache";
+import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
+import { getCachedStorageList } from "@/lib/storageCache";
+import { getCurrentHome } from "./homeContext";
 import { supabase } from "./supabaseClient";
 
 /** Home-scoped gallery count for My Home summary (not used by Gallery page). */
@@ -12,9 +13,11 @@ export async function getGalleryFileCount(
   userId: string,
   homeId: string
 ): Promise<number> {
-  const { data, error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .list(storagePath(userId, homeId), { limit: 100 });
+  const { data, error } = await getCachedStorageList(userId, homeId, () =>
+    supabase.storage
+      .from(STORAGE_BUCKET)
+      .list(storagePath(userId, homeId), { limit: 100 })
+  );
 
   if (error) {
     return 0;
@@ -43,7 +46,6 @@ type HomeRow = {
 
 export type MyHomeData = {
   currentHome: Home | null;
-  previousHomes: Home[];
   homes: Home[];
   currentHomeId: string | null;
 };
@@ -87,7 +89,7 @@ export async function fetchMyHomeData(): Promise<
   | { ok: true; data: MyHomeData }
   | { ok: false; message: string }
 > {
-  const userId = await getCurrentUserId();
+  const userId = await getCachedUserId();
 
   if (!userId) {
     return { ok: false, message: "Not signed in." };
@@ -95,7 +97,7 @@ export async function fetchMyHomeData(): Promise<
 
   const [homesResult, currentHomeId] = await Promise.all([
     supabase.from("homes").select("*").eq("user_id", userId),
-    getActiveHomeId(userId),
+    getCachedCurrentHomeId(userId),
   ]);
 
   if (homesResult.error) {
@@ -110,11 +112,10 @@ export async function fetchMyHomeData(): Promise<
   const homes = rows.map(mapHomeRow);
   const userState = { current_home_id: currentHomeId };
   const currentHome = getCurrentHome(homes, userState);
-  const previousHomes = getPreviousHomes(homes, currentHomeId);
 
   return {
     ok: true,
-    data: { currentHome, previousHomes, homes, currentHomeId },
+    data: { currentHome, homes, currentHomeId },
   };
 }
 
@@ -124,7 +125,7 @@ export async function setCurrentHome(
   | { ok: true; data: MyHomeData }
   | { ok: false; message: string }
 > {
-  const userId = await getCurrentUserId();
+  const userId = await getCachedUserId();
 
   if (!userId) {
     return { ok: false, message: "Not signed in." };
@@ -146,6 +147,7 @@ export async function setCurrentHome(
     };
   }
 
+  invalidateHomeCache();
   return fetchMyHomeData();
 }
 
@@ -155,7 +157,7 @@ export async function createHome(
   | { ok: true; data: MyHomeData; createdHome: Home }
   | { ok: false; message: string }
 > {
-  const userId = await getCurrentUserId();
+  const userId = await getCachedUserId();
 
   if (!userId) {
     return { ok: false, message: "Not signed in." };
@@ -194,6 +196,7 @@ export async function createHome(
     };
   }
 
+  invalidateHomeCache();
   const refreshed = await fetchMyHomeData();
   if (!refreshed.ok) {
     return refreshed;

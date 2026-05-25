@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   loginHref,
   ROUTE_DASHBOARD,
@@ -12,7 +12,7 @@ import {
   ROUTE_DASHBOARD_MY_HOME_NOTES,
   ROUTE_DASHBOARD_MY_HOME_VAULT,
 } from "@/lib/appNavigation";
-import { fetchAuthSession, initAuthSessionListener } from "@/lib/authSession";
+import { useAuthSession } from "@/lib/useAuthSession";
 import "./dashboard.css";
 
 function navLinkClass(active: boolean) {
@@ -27,24 +27,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuthSession();
 
   useEffect(() => {
-    initAuthSessionListener();
+    if (isAuthLoading || isAuthenticated) {
+      return;
+    }
 
-    void fetchAuthSession()
-      .then((session) => {
-        if (!session?.userId) {
-          window.location.href = loginHref(ROUTE_DASHBOARD);
-        }
-      })
-      .catch((error) => {
-        console.error("[dashboard] auth check failed", error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+    window.location.href = loginHref(ROUTE_DASHBOARD);
+  }, [isAuthLoading, isAuthenticated]);
 
   const overviewActive = pathname === ROUTE_DASHBOARD;
   const myHomeActive = pathname === ROUTE_DASHBOARD_MY_HOME;
@@ -53,12 +44,13 @@ export default function DashboardLayout({
   const notesActive = pathname === ROUTE_DASHBOARD_MY_HOME_NOTES;
   const vaultActive = pathname === ROUTE_DASHBOARD_MY_HOME_VAULT;
 
-  if (loading) {
-    return <div className="dashboard-loading">Loading…</div>;
-  }
-
   return (
     <div className="dashboard-shell">
+      {isAuthLoading ? (
+        <p className="dashboard-auth-banner" role="status" aria-live="polite">
+          Checking session…
+        </p>
+      ) : null}
       <aside className="dashboard-sidebar">
         <Link href={ROUTE_DASHBOARD} className="dashboard-brand">
           Vireon

@@ -5,7 +5,6 @@ HOME CONTEXT CONTRACT:
 
 - A user has exactly ONE active home at any time
 - Active home is defined by user_state.current_home_id
-- All other homes are considered historical (Previous Homes)
 - All features MUST derive home context from this contract only
 */
 
@@ -43,25 +42,13 @@ export function getCurrentHome(
   return homes.find((h) => h.id === currentHomeId) ?? null;
 }
 
-/** Historical homes: homes.filter(h => h.id !== current_home_id) */
-export function getPreviousHomes(
-  homes: Home[],
-  currentHomeId: string | null
-): Home[] {
-  if (!currentHomeId) {
-    return [...homes];
-  }
-  return homes.filter((h) => h.id !== currentHomeId);
-}
-
-/** Single entry point for current + previous homes from raw lists. */
+/** Single entry point for current home from raw lists. */
 export function resolveHomeContext(
   homes: Home[],
   userState: UserHomeState | string | null
-): { currentHome: Home | null; previousHomes: Home[] } {
+): { currentHome: Home | null } {
   const currentHomeId = resolveCurrentHomeId(userState);
   return {
     currentHome: getCurrentHome(homes, currentHomeId),
-    previousHomes: getPreviousHomes(homes, currentHomeId),
   };
 }

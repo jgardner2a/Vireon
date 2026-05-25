@@ -1,10 +1,6 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getCachedUserId } from "@/lib/sessionCache";
 
-/** Auth user id from JWT only (auth.uid() aligned). No cached-session fallback. */
+/** Data-layer user id; delegates to the session cache (single auth.getUser() source). */
 export async function getCurrentUserId(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return user?.id ?? null;
+  return getCachedUserId();
 }
