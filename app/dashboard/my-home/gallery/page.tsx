@@ -61,18 +61,30 @@ export default function GalleryPage() {
 
     const next: GalleryFile[] = [];
 
-    for (const item of listed ?? []) {
-      if (!item.name || item.id === null) continue;
+    const paths = (listed ?? [])
+      .filter((item) => item.name && item.id !== null)
+      .map((item) => `${userId}/${homeId}/${item.name}`);
 
-      const { data, error: signError } = await supabase.storage
+    if (paths.length > 0) {
+      const { data: signed, error: signError } = await supabase.storage
         .from(BUCKET)
-        .createSignedUrl(`${userId}/${homeId}/${item.name}`, 60);
+        .createSignedUrls(paths, 60);
 
-      if (signError || !data?.signedUrl) continue;
+      if (signError) {
+        setFiles([]);
+        setLoading(false);
+        return;
+      }
 
-      next.push({ name: item.name, url: data.signedUrl });
+      for (const row of signed ?? []) {
+        if (row.error || !row.signedUrl || !row.path) continue;
+
+        const name = row.path.slice(row.path.lastIndexOf("/") + 1);
+        next.push({ name, url: row.signedUrl });
+      }
     }
 
+    next.reverse();
     setFiles(next);
     setLoading(false);
   }, []);
