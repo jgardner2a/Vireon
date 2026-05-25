@@ -1,4 +1,7 @@
-import { DEFAULT_NOTE_CATEGORY, normalizeNoteCategory } from "@/lib/notes/noteConfig";
+import {
+  DEFAULT_NOTE_CATEGORY,
+  normalizeCategory,
+} from "@/lib/notes/noteConfig";
 import type { CreateNoteInput, Note, UpdateNoteInput } from "@/lib/notes/types";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -71,7 +74,7 @@ export async function createNote(
       user_id: input.userId,
       home_id: input.homeId,
       title: normalizeTitle(input.title),
-      category: normalizeNoteCategory(input.category || DEFAULT_NOTE_CATEGORY),
+      category: normalizeCategory(input.category || DEFAULT_NOTE_CATEGORY),
       content,
     })
     .select()
@@ -101,7 +104,7 @@ export async function updateNote(
     .from("notes")
     .update({
       title: normalizeTitle(input.title),
-      category: normalizeNoteCategory(input.category || DEFAULT_NOTE_CATEGORY),
+      category: normalizeCategory(input.category || DEFAULT_NOTE_CATEGORY),
       content,
     })
     .eq("id", input.id)

@@ -8,8 +8,10 @@ import {
   previewNoteContent,
 } from "@/lib/notes/format";
 import {
+  ALLOWED_CATEGORIES,
   DEFAULT_NOTE_CATEGORY,
-  NOTE_CATEGORIES,
+  normalizeCategory,
+  type NoteCategory,
 } from "@/lib/notes/noteConfig";
 import {
   createNote,
@@ -20,16 +22,22 @@ import {
 import type { Note } from "@/lib/notes/types";
 import "./notes.css";
 
-const EMPTY_FORM = {
+type NoteFormState = {
+  title: string;
+  category: NoteCategory;
+  content: string;
+};
+
+const EMPTY_FORM: NoteFormState = {
   title: "",
   category: DEFAULT_NOTE_CATEGORY,
   content: "",
 };
 
-function noteToForm(note: Note) {
+function noteToForm(note: Note): NoteFormState {
   return {
     title: note.title ?? "",
-    category: note.category?.trim() || DEFAULT_NOTE_CATEGORY,
+    category: normalizeCategory(note.category),
     content: note.content,
   };
 }
@@ -42,7 +50,7 @@ export default function NotesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<NoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -338,11 +346,14 @@ export default function NotesPage() {
                   id="note-category"
                   value={form.category}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, category: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      category: normalizeCategory(e.target.value),
+                    }))
                   }
                   disabled={saving || deleting}
                 >
-                  {NOTE_CATEGORIES.map((category) => (
+                  {ALLOWED_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
