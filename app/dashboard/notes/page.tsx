@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   formatNoteDate,
@@ -13,6 +13,7 @@ import {
   normalizeCategory,
   type NoteCategory,
 } from "@/lib/notes/noteConfig";
+import { uploadNoteAttachments } from "@/lib/notes/noteAttachments";
 import {
   createNote,
   deleteNote,
@@ -53,6 +54,10 @@ export default function NotesPage() {
   const [form, setForm] = useState<NoteFormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [pendingAttachmentFiles, setPendingAttachmentFiles] = useState<File[]>(
+    []
+  );
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const userId = state?.userId ?? null;
   const homeId = state?.currentHomeId ?? null;
@@ -89,10 +94,53 @@ export default function NotesPage() {
     void loadNotes();
   }, [dashboardLoading, loadNotes]);
 
+  const resetAttachmentState = () => {
+    setPendingAttachmentFiles([]);
+  };
+
+  const handleAttachmentFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+
+    if (!picked.length) {
+      return;
+    }
+
+    const images = picked.filter((file) => file.type.startsWith("image/"));
+    if (images.length === 0) {
+      return;
+    }
+
+    setPendingAttachmentFiles((prev) => [...prev, ...images]);
+  };
+
+  const uploadPendingAttachments = async (noteId: string): Promise<void> => {
+    if (!userId || !homeId || pendingAttachmentFiles.length === 0) {
+      return;
+    }
+
+    const result = await uploadNoteAttachments({
+      userId,
+      homeId,
+      noteId,
+      files: pendingAttachmentFiles,
+    });
+
+    if (!result.ok) {
+      console.error("[notes] attachment upload after save", result.message);
+      return;
+    }
+
+    setPendingAttachmentFiles([]);
+  };
+
   const openCreateModal = () => {
     setError(null);
     setEditingNoteId(null);
     setConfirmDeleteOpen(false);
+    resetAttachmentState();
     setForm(EMPTY_FORM);
     setModalOpen(true);
   };
@@ -101,6 +149,7 @@ export default function NotesPage() {
     setError(null);
     setEditingNoteId(note.id);
     setConfirmDeleteOpen(false);
+    setPendingAttachmentFiles([]);
     setForm(noteToForm(note));
     setModalOpen(true);
   };
@@ -114,6 +163,7 @@ export default function NotesPage() {
     setConfirmDeleteOpen(false);
     setEditingNoteId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,11 +192,14 @@ export default function NotesPage() {
         return;
       }
 
+      await uploadPendingAttachments(editingNoteId);
+
       setSaving(false);
       setModalOpen(false);
       setConfirmDeleteOpen(false);
       setEditingNoteId(null);
       setForm(EMPTY_FORM);
+      resetAttachmentState();
       await loadNotes();
       return;
     }
@@ -165,10 +218,13 @@ export default function NotesPage() {
       return;
     }
 
+    await uploadPendingAttachments(result.note.id);
+
     setSaving(false);
     setModalOpen(false);
     setEditingNoteId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
     await loadNotes();
   };
 
@@ -206,6 +262,7 @@ export default function NotesPage() {
     setModalOpen(false);
     setEditingNoteId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
     await loadNotes();
   };
 
@@ -373,6 +430,50 @@ export default function NotesPage() {
                   disabled={saving || deleting}
                   required
                 />
+              </div>
+
+              <div className="notes-field">
+                <span id="note-photos-label" className="notes-field-label">
+                  Photos (optional)
+                </span>
+                <input
+                  ref={attachmentInputRef}
+                  id="note-attachments"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="notes-file-input"
+                  disabled={saving || deleting}
+                  onChange={handleAttachmentFileChange}
+                  aria-labelledby="note-photos-label"
+                  tabIndex={-1}
+                />
+                <button
+                  type="button"
+                  className="notes-btn-secondary notes-attachment-upload-btn"
+                  disabled={saving || deleting}
+                  aria-labelledby="note-photos-label"
+                  aria-describedby="note-attachments-hint"
+                  onClick={() => attachmentInputRef.current?.click()}
+                >
+                  Upload Images
+                </button>
+                <p id="note-attachments-hint" className="notes-attachments-hint">
+                  Add images. They are stored in your gallery and linked
+                  to this note.
+                </p>
+                {pendingAttachmentFiles.length > 0 ? (
+                  <ul
+                    className="notes-attachment-pending"
+                    aria-label="Photos to upload"
+                  >
+                    {pendingAttachmentFiles.map((file) => (
+                      <li key={`${file.name}-${file.lastModified}`}>
+                        {file.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
 
               {error ? (

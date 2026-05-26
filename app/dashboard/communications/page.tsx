@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   COMMUNICATION_CATEGORIES,
@@ -11,6 +11,7 @@ import {
   type CommunicationCategory,
   type CommunicationStatus,
 } from "@/lib/communications/communicationConfig";
+import { uploadCommunicationAttachments } from "@/lib/communications/communicationAttachments";
 import {
   createCommunication,
   deleteCommunication,
@@ -62,6 +63,10 @@ export default function CommunicationsPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+  const [pendingAttachmentFiles, setPendingAttachmentFiles] = useState<File[]>(
+    []
+  );
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const userId = state?.userId ?? null;
   const homeId = state?.currentHomeId ?? null;
@@ -98,10 +103,58 @@ export default function CommunicationsPage() {
     void loadCommunications();
   }, [dashboardLoading, loadCommunications]);
 
+  const resetAttachmentState = () => {
+    setPendingAttachmentFiles([]);
+  };
+
+  const handleAttachmentFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+
+    if (!picked.length) {
+      return;
+    }
+
+    const images = picked.filter((file) => file.type.startsWith("image/"));
+    if (images.length === 0) {
+      return;
+    }
+
+    setPendingAttachmentFiles((prev) => [...prev, ...images]);
+  };
+
+  const uploadPendingAttachments = async (
+    communicationId: string
+  ): Promise<void> => {
+    if (!userId || !homeId || pendingAttachmentFiles.length === 0) {
+      return;
+    }
+
+    const result = await uploadCommunicationAttachments({
+      userId,
+      homeId,
+      communicationId,
+      files: pendingAttachmentFiles,
+    });
+
+    if (!result.ok) {
+      console.error(
+        "[communications] attachment upload after save",
+        result.message
+      );
+      return;
+    }
+
+    setPendingAttachmentFiles([]);
+  };
+
   const openCreateModal = () => {
     setError(null);
     setEditingCommunicationId(null);
     setConfirmDeleteOpen(false);
+    resetAttachmentState();
     setForm(EMPTY_FORM);
     setModalOpen(true);
   };
@@ -110,6 +163,7 @@ export default function CommunicationsPage() {
     setError(null);
     setEditingCommunicationId(communication.id);
     setConfirmDeleteOpen(false);
+    setPendingAttachmentFiles([]);
     setForm(communicationToForm(communication));
     setModalOpen(true);
   };
@@ -123,6 +177,7 @@ export default function CommunicationsPage() {
     setConfirmDeleteOpen(false);
     setEditingCommunicationId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,11 +217,14 @@ export default function CommunicationsPage() {
         return;
       }
 
+      await uploadPendingAttachments(editingCommunicationId);
+
       setSaving(false);
       setModalOpen(false);
       setConfirmDeleteOpen(false);
       setEditingCommunicationId(null);
       setForm(EMPTY_FORM);
+      resetAttachmentState();
       await loadCommunications();
       return;
     }
@@ -186,10 +244,13 @@ export default function CommunicationsPage() {
       return;
     }
 
+    await uploadPendingAttachments(result.communication.id);
+
     setSaving(false);
     setModalOpen(false);
     setEditingCommunicationId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
     await loadCommunications();
   };
 
@@ -262,6 +323,7 @@ export default function CommunicationsPage() {
     setModalOpen(false);
     setEditingCommunicationId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
     await loadCommunications();
   };
 
@@ -494,6 +556,56 @@ export default function CommunicationsPage() {
                   disabled={saving || deleting}
                   required
                 />
+              </div>
+
+              <div className="communications-field">
+                <span
+                  id="communication-photos-label"
+                  className="communications-field-label"
+                >
+                  Photos (optional)
+                </span>
+                <input
+                  ref={attachmentInputRef}
+                  id="communication-attachments"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="communications-file-input"
+                  disabled={saving || deleting}
+                  onChange={handleAttachmentFileChange}
+                  aria-labelledby="communication-photos-label"
+                  tabIndex={-1}
+                />
+                <button
+                  type="button"
+                  className="communications-btn-secondary communications-attachment-upload-btn"
+                  disabled={saving || deleting}
+                  aria-labelledby="communication-photos-label"
+                  aria-describedby="communication-attachments-hint"
+                  onClick={() => attachmentInputRef.current?.click()}
+                >
+                  Upload Images
+                </button>
+                <p
+                  id="communication-attachments-hint"
+                  className="communications-attachments-hint"
+                >
+                  Add images. They are stored in your gallery and linked
+                  to this communication.
+                </p>
+                {pendingAttachmentFiles.length > 0 ? (
+                  <ul
+                    className="communications-attachment-pending"
+                    aria-label="Photos to upload"
+                  >
+                    {pendingAttachmentFiles.map((file) => (
+                      <li key={`${file.name}-${file.lastModified}`}>
+                        {file.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
 
               {error ? (

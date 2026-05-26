@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import { formatLogDate, previewDescription } from "@/lib/maintenance/format";
 import {
@@ -10,6 +10,8 @@ import {
   MAINTENANCE_LOG_STATUSES,
   type MaintenanceLogStatus,
 } from "@/lib/maintenance/logConfig";
+import { fetchMaintenanceGalleryItems } from "@/lib/gallery/galleryRecords";
+import { resolveSignedGalleryUrls } from "@/lib/gallerySignedUrlCache";
 import {
   createMaintenanceLog,
   deleteMaintenanceLog,
@@ -17,8 +19,16 @@ import {
   updateMaintenanceLog,
   updateMaintenanceLogStatus,
 } from "@/lib/maintenance/maintenanceLogs";
+import { uploadMaintenanceAttachments } from "@/lib/maintenance/maintenanceAttachments";
 import type { MaintenanceLog } from "@/lib/maintenance/types";
+import { STORAGE_BUCKET } from "@/lib/storagePath";
 import "./maintenance.css";
+
+type ExistingAttachment = {
+  id: string;
+  storage_path: string;
+  previewUrl: string;
+};
 
 const EMPTY_FORM = {
   category: "",
@@ -48,6 +58,14 @@ export default function MaintenancePage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+  const [pendingAttachmentFiles, setPendingAttachmentFiles] = useState<File[]>(
+    []
+  );
+  const [existingAttachments, setExistingAttachments] = useState<
+    ExistingAttachment[]
+  >([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const userId = state?.userId ?? null;
   const homeId = state?.currentHomeId ?? null;
@@ -105,10 +123,90 @@ export default function MaintenancePage() {
     }
   }, [form.category, form.issueType]);
 
+  useEffect(() => {
+    if (!modalOpen || !editingLogId || !userId || !homeId) {
+      if (!modalOpen) {
+        setExistingAttachments([]);
+        setPendingAttachmentFiles([]);
+        setAttachmentsLoading(false);
+      }
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      setAttachmentsLoading(true);
+
+      const result = await fetchMaintenanceGalleryItems(
+        userId,
+        homeId,
+        editingLogId
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      if (!result.ok) {
+        setExistingAttachments([]);
+        setAttachmentsLoading(false);
+        return;
+      }
+
+      if (result.items.length === 0) {
+        setExistingAttachments([]);
+        setAttachmentsLoading(false);
+        return;
+      }
+
+      try {
+        const paths = result.items.map((item) => item.storage_path);
+        const signed = await resolveSignedGalleryUrls(
+          userId,
+          homeId,
+          paths,
+          STORAGE_BUCKET
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setExistingAttachments(
+          result.items.map((item, index) => ({
+            id: item.id,
+            storage_path: item.storage_path,
+            previewUrl: signed[index]?.url ?? "",
+          }))
+        );
+      } catch {
+        if (!cancelled) {
+          setExistingAttachments([]);
+        }
+      }
+
+      if (!cancelled) {
+        setAttachmentsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modalOpen, editingLogId, userId, homeId]);
+
+  const resetAttachmentState = () => {
+    setPendingAttachmentFiles([]);
+    setExistingAttachments([]);
+    setAttachmentsLoading(false);
+  };
+
   const openCreateModal = () => {
     setError(null);
     setEditingLogId(null);
     setConfirmDeleteOpen(false);
+    resetAttachmentState();
     const firstCategory = categories[0] ?? "";
     setForm({
       ...EMPTY_FORM,
@@ -124,6 +222,8 @@ export default function MaintenancePage() {
     setError(null);
     setEditingLogId(log.id);
     setConfirmDeleteOpen(false);
+    setPendingAttachmentFiles([]);
+    setExistingAttachments([]);
     setForm(logToForm(log));
     setModalOpen(true);
   };
@@ -137,6 +237,47 @@ export default function MaintenancePage() {
     setConfirmDeleteOpen(false);
     setEditingLogId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
+  };
+
+  const handleAttachmentFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+
+    if (!picked.length) {
+      return;
+    }
+
+    const images = picked.filter((file) => file.type.startsWith("image/"));
+    if (images.length === 0) {
+      return;
+    }
+
+    setPendingAttachmentFiles((prev) => [...prev, ...images]);
+  };
+
+  const uploadPendingAttachments = async (
+    maintenanceLogId: string
+  ): Promise<string | null> => {
+    if (!userId || !homeId || pendingAttachmentFiles.length === 0) {
+      return null;
+    }
+
+    const result = await uploadMaintenanceAttachments({
+      userId,
+      homeId,
+      maintenanceLogId,
+      files: pendingAttachmentFiles,
+    });
+
+    if (!result.ok) {
+      return result.message;
+    }
+
+    setPendingAttachmentFiles([]);
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,11 +312,21 @@ export default function MaintenancePage() {
         return;
       }
 
+      const attachmentError = await uploadPendingAttachments(editingLogId);
+      if (attachmentError) {
+        setSaving(false);
+        setError(
+          `Maintenance log saved, but photos could not be uploaded: ${attachmentError}`
+        );
+        return;
+      }
+
       setSaving(false);
       setModalOpen(false);
       setConfirmDeleteOpen(false);
       setEditingLogId(null);
       setForm(EMPTY_FORM);
+      resetAttachmentState();
       await loadLogs();
       return;
     }
@@ -195,10 +346,20 @@ export default function MaintenancePage() {
       return;
     }
 
+    const attachmentError = await uploadPendingAttachments(result.log.id);
+    if (attachmentError) {
+      setSaving(false);
+      setError(
+        `Maintenance log saved, but photos could not be uploaded: ${attachmentError}`
+      );
+      return;
+    }
+
     setSaving(false);
     setModalOpen(false);
     setEditingLogId(null);
     setForm(EMPTY_FORM);
+    resetAttachmentState();
     await loadLogs();
   };
 
@@ -501,6 +662,79 @@ export default function MaintenancePage() {
                   disabled={saving || deleting}
                   required
                 />
+              </div>
+
+              <div className="maintenance-field">
+                <span
+                  id="maintenance-photos-label"
+                  className="maintenance-field-label"
+                >
+                  Photos (optional)
+                </span>
+                <input
+                  ref={attachmentInputRef}
+                  id="maintenance-attachments"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="maintenance-file-input"
+                  disabled={saving || deleting}
+                  onChange={handleAttachmentFileChange}
+                  aria-labelledby="maintenance-photos-label"
+                  tabIndex={-1}
+                />
+                <button
+                  type="button"
+                  className="maintenance-btn-secondary maintenance-attachment-upload-btn"
+                  disabled={saving || deleting}
+                  aria-labelledby="maintenance-photos-label"
+                  aria-describedby="maintenance-attachments-hint"
+                  onClick={() => attachmentInputRef.current?.click()}
+                >
+                  Upload Images
+                </button>
+                <p
+                  id="maintenance-attachments-hint"
+                  className="maintenance-attachments-hint"
+                >
+                  Add images. They are stored in your gallery and linked
+                  to this maintenance log.
+                </p>
+                {attachmentsLoading ? (
+                  <p className="maintenance-attachments-hint">
+                    Loading existing photos…
+                  </p>
+                ) : null}
+                {existingAttachments.length > 0 ? (
+                  <ul
+                    className="maintenance-attachment-list"
+                    aria-label="Existing photos"
+                  >
+                    {existingAttachments.map((attachment) =>
+                      attachment.previewUrl ? (
+                        <li key={attachment.id}>
+                          <img
+                            src={attachment.previewUrl}
+                            alt=""
+                            className="maintenance-attachment-thumb"
+                          />
+                        </li>
+                      ) : null
+                    )}
+                  </ul>
+                ) : null}
+                {pendingAttachmentFiles.length > 0 ? (
+                  <ul
+                    className="maintenance-attachment-pending"
+                    aria-label="Photos to upload"
+                  >
+                    {pendingAttachmentFiles.map((file) => (
+                      <li key={`${file.name}-${file.lastModified}`}>
+                        {file.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
 
               {error ? (

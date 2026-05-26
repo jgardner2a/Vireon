@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@/lib/authSession";
+import { clearGallerySelectionStorage } from "@/lib/gallery/useGallerySelection";
 import { getActiveHomeId } from "@/lib/home/getActiveHomeId";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -117,4 +118,5 @@ export function clearSessionCache(): void {
   cachedCurrentHomeId = null;
   removeSessionStorage(USER_ID_KEY);
   removeSessionStorage(HOME_ID_KEY);
+  clearGallerySelectionStorage();
 }

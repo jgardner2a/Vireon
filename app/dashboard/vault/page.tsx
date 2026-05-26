@@ -10,7 +10,7 @@ export default function VaultPage() {
 
         <p className="dashboard-subtitle" style={{ margin: 0 }}>
 
-          Evidence Vault coming soon
+          Vault coming soon
 
         </p>
 
