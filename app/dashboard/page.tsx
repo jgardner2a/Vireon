@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ROUTE_DASHBOARD } from "@/lib/appNavigation";
+import { ROUTE_DASHBOARD, ROUTE_DASHBOARD_MY_HOME } from "@/lib/appNavigation";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   getDashboardSnapshot,
@@ -12,20 +13,11 @@ import {
   getHomeDashboardMetrics,
   type HomeDashboardMetrics,
 } from "@/lib/dashboard/getHomeDashboardMetrics";
-import { createHome, setCurrentHome as activateHome, type Home } from "@/lib/myHome";
+import type { Home } from "@/lib/myHome";
 import { assertNoDirectHomeQuery } from "@/lib/home/homeContract";
 import "./dashboard-home.css";
 
 assertNoDirectHomeQuery();
-
-const EMPTY_FORM = {
-  apartmentName: "",
-  address: "",
-  apartmentNumber: "",
-  city: "",
-  state: "",
-  zipCode: "",
-};
 
 type HomeFeatureContext = {
   currentHome: Home;
@@ -141,11 +133,11 @@ function PreviousHomesSection() {
       aria-labelledby="previous-homes-heading"
     >
       <h2 id="previous-homes-heading" className="my-home-section-title">
-        Previous Homes
+        Property History
       </h2>
       <div className="my-home-card">
         <p className="my-home-empty" style={{ margin: 0 }}>
-          No previous homes yet
+          No previous properties yet
         </p>
       </div>
     </section>
@@ -155,10 +147,6 @@ function PreviousHomesSection() {
 export default function DashboardPage() {
   const pathname = usePathname();
   const { state, loading, error: dashboardError, refresh } = useDashboardState();
-  const [showAddHomeModal, setShowAddHomeModal] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<HomeDashboardMetrics | null>(null);
 
   const homes = state?.homes ?? [];
@@ -220,49 +208,11 @@ export default function DashboardPage() {
     })();
   }, [state?.userId, currentHomeId]);
 
-  const displayError = error ?? dashboardError;
-
-  const handleCreateHome = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    const created = await createHome({
-      name: form.apartmentName,
-      address: form.address,
-      apartmentNumber: form.apartmentNumber,
-      city: form.city,
-      state: form.state,
-      zip: form.zipCode,
-    });
-
-    if (!created.ok) {
-      setSaving(false);
-      setError(created.message);
-      return;
-    }
-
-    const activated = await activateHome(created.createdHome.id);
-
-    if (!activated.ok) {
-      setSaving(false);
-      setError(activated.message);
-      return;
-    }
-
-    await refresh();
-    setSaving(false);
-    setShowAddHomeModal(false);
-    setForm(EMPTY_FORM);
-  };
-
-  const modalOpen = showAddHomeModal;
-
   if (loading) {
     return (
       <div className="dashboard-container">
         <section id="my-home">
-          <h1 className="my-home-page-title">My Home</h1>
+          <h1 className="my-home-page-title">Dashboard</h1>
           <p className="my-home-empty">Loading…</p>
         </section>
       </div>
@@ -273,158 +223,41 @@ export default function DashboardPage() {
     return (
       <div className="dashboard-container">
         <section id="my-home">
-        <header className="my-home-topbar">
-          <h1 className="my-home-page-title">My Home</h1>
-          <button
-            type="button"
-            className="my-home-btn-primary"
-            onClick={() => {
-              setForm(EMPTY_FORM);
-              setError(null);
-              setShowAddHomeModal(true);
-            }}
+          <header className="my-home-topbar">
+            <h1 className="my-home-page-title">Dashboard</h1>
+          </header>
+          {dashboardError ? (
+            <p className="my-home-error" role="alert">
+              {dashboardError}
+            </p>
+          ) : null}
+          <section
+            className="my-home-section"
+            aria-labelledby="property-workspace-heading"
           >
-            Add Home
-          </button>
-        </header>
-
-        {displayError && !modalOpen ? (
-          <p className="my-home-error" role="alert">
-            {displayError}
-          </p>
-        ) : null}
-
-        {showAddHomeModal ? (
-          <div
-            className="my-home-modal-backdrop"
-            role="presentation"
-            onClick={() => {
-              setShowAddHomeModal(false);
-              setForm(EMPTY_FORM);
-            }}
-          >
-            <div
-              className="my-home-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="add-home-modal-title"
-              onClick={(e) => e.stopPropagation()}
+            <h2
+              id="property-workspace-heading"
+              className="my-home-section-title"
             >
-              <h2 id="add-home-modal-title" className="my-home-modal-title">
-                Add a home
-              </h2>
-              <form className="my-home-form" onSubmit={handleCreateHome}>
-                <div className="my-home-field">
-                  <label htmlFor="apartment-name">Apartment Name</label>
-                  <input
-                    id="apartment-name"
-                    type="text"
-                    value={form.apartmentName}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, apartmentName: e.target.value }))
-                    }
-                    disabled={saving}
-                  />
-                </div>
-                <div className="my-home-field">
-                  <label htmlFor="address">Address</label>
-                  <input
-                    id="address"
-                    type="text"
-                    value={form.address}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, address: e.target.value }))
-                    }
-                    disabled={saving}
-                  />
-                </div>
-                <div className="my-home-field">
-                  <label htmlFor="apartment-number">Apartment Number</label>
-                  <input
-                    id="apartment-number"
-                    type="text"
-                    value={form.apartmentNumber}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        apartmentNumber: e.target.value,
-                      }))
-                    }
-                    disabled={saving}
-                  />
-                </div>
-                <div className="my-home-form-row">
-                  <div className="my-home-field">
-                    <label htmlFor="city">City</label>
-                    <input
-                      id="city"
-                      type="text"
-                      value={form.city}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, city: e.target.value }))
-                      }
-                      disabled={saving}
-                    />
-                  </div>
-                  <div className="my-home-field">
-                    <label htmlFor="state">State</label>
-                    <input
-                      id="state"
-                      type="text"
-                      value={form.state}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, state: e.target.value }))
-                      }
-                      disabled={saving}
-                    />
-                  </div>
-                </div>
-                <div className="my-home-field">
-                  <label htmlFor="zip">Zip Code</label>
-                  <input
-                    id="zip"
-                    type="text"
-                    value={form.zipCode}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, zipCode: e.target.value }))
-                    }
-                    disabled={saving}
-                  />
-                </div>
-
-                {displayError ? (
-                  <p className="my-home-error" role="alert">
-                    {displayError}
-                  </p>
-                ) : null}
-
-                <div className="my-home-modal-actions">
-                  <button
-                    type="button"
-                    className="my-home-btn-secondary"
-                    onClick={() => {
-                      setShowAddHomeModal(false);
-                      setForm(EMPTY_FORM);
-                    }}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="my-home-btn-primary"
-                    disabled={saving}
-                  >
-                    {saving ? "Saving…" : "Save"}
-                  </button>
-                </div>
-              </form>
+              Property Workspace
+            </h2>
+            <div className="my-home-card">
+              <p className="my-home-empty" style={{ margin: 0 }}>
+                No active property. Open My Home to add and manage your property
+                workspace.
+              </p>
+              <p style={{ margin: "12px 0 0" }}>
+                <Link
+                  href={ROUTE_DASHBOARD_MY_HOME}
+                  className="dashboard-nav-link dashboard-nav-link--active"
+                  style={{ display: "inline-block" }}
+                >
+                  Go to My Home
+                </Link>
+              </p>
             </div>
-          </div>
-        ) : null}
+          </section>
         </section>
-
-        <PreviousHomesSection />
       </div>
     );
   }
@@ -433,12 +266,12 @@ export default function DashboardPage() {
     <div className="dashboard-container">
       <section id="my-home">
       <header className="my-home-topbar">
-        <h1 className="my-home-page-title">My Home</h1>
+        <h1 className="my-home-page-title">Dashboard</h1>
       </header>
 
-      {displayError && !modalOpen ? (
+      {dashboardError ? (
         <p className="my-home-error" role="alert">
-          {displayError}
+          {dashboardError}
         </p>
       ) : null}
 
@@ -447,7 +280,7 @@ export default function DashboardPage() {
         aria-labelledby="current-home-heading"
       >
         <h2 id="current-home-heading" className="my-home-section-title">
-          Current Home
+          Active Property
         </h2>
         <div
           className="my-home-card"

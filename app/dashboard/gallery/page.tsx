@@ -27,6 +27,7 @@ import {
   getCachedStorageList,
   invalidateStorageCache,
 } from "@/lib/storageCache";
+import { noteDisplayTitle } from "@/lib/notes/format";
 import { STORAGE_BUCKET } from "@/lib/storagePath";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -63,6 +64,9 @@ type GalleryFile = {
   name: string;
   url: string;
   galleryId: string | null;
+  ownerType: string | null;
+  ownerId: string | null;
+  folderId: string | null;
 };
 
 type SignedGalleryFile = {
@@ -70,6 +74,32 @@ type SignedGalleryFile = {
   name: string;
   url: string;
 };
+
+type EvidenceType = "maintenance" | "communication" | "note";
+type EvidenceRecordFilter = {
+  ownerType: EvidenceType;
+  ownerId: string;
+};
+type ActiveSidebarFilter = "folder" | "evidence" | null;
+type UploadGalleryContext = "gallery" | "maintenance" | "note" | "communication";
+type EvidenceRecordItem = {
+  ownerType: EvidenceType;
+  ownerId: string;
+  label: string;
+};
+type EvidenceSection = {
+  ownerType: EvidenceType;
+  title: string;
+  records: EvidenceRecordItem[];
+};
+
+function isEvidenceOwnerType(ownerType: string | null): ownerType is EvidenceType {
+  return (
+    ownerType === "maintenance" ||
+    ownerType === "communication" ||
+    ownerType === "note"
+  );
+}
 
 function buildPathsFromList(
   listed: { name: string; id: string | null }[] | null,
@@ -119,7 +149,10 @@ function memoizeGalleryFiles(
   cache: Map<string, GalleryFile>,
   batchPaths: string[],
   signed: SignedGalleryFile[],
-  galleryIdByPath: Map<string, string | null>
+  galleryIdByPath: Map<string, string | null>,
+  ownerTypeByPath: Map<string, string | null>,
+  ownerIdByPath: Map<string, string | null>,
+  folderIdByPath: Map<string, string | null>
 ): GalleryFile[] {
   const signedByPath = new Map(signed.map((file) => [file.path, file]));
   const memoized: GalleryFile[] = [];
@@ -141,6 +174,9 @@ function memoizeGalleryFiles(
       name: row.name,
       url: row.url,
       galleryId: galleryIdByPath.get(path) ?? null,
+      ownerType: ownerTypeByPath.get(path) ?? null,
+      ownerId: ownerIdByPath.get(path) ?? null,
+      folderId: folderIdByPath.get(path) ?? null,
     };
     cache.set(path, next);
     memoized.push(next);
@@ -395,21 +431,33 @@ function CreateFolderModal({
 function GalleryFolderSidebar({
   folders,
   loading,
+  evidenceSections,
+  evidenceLoading,
   activeFolderId,
+  activeEvidenceRecord,
+  activeSidebarFilter,
   canMove,
+  moveBlockedByEvidence,
   onOpenMoveFolder,
   onOpenCreateFolder,
   onSelectAll,
   onSelectFolder,
+  onSelectEvidenceRecord,
 }: {
   folders: Folder[];
   loading: boolean;
+  evidenceSections: EvidenceSection[];
+  evidenceLoading: boolean;
   activeFolderId: string | null;
+  activeEvidenceRecord: EvidenceRecordFilter | null;
+  activeSidebarFilter: ActiveSidebarFilter;
   canMove: boolean;
+  moveBlockedByEvidence: boolean;
   onOpenMoveFolder: () => void;
   onOpenCreateFolder: () => void;
   onSelectAll: () => void;
   onSelectFolder: (folderId: string) => void;
+  onSelectEvidenceRecord: (record: EvidenceRecordFilter) => void;
 }) {
   return (
     <aside className="gallery-folder-sidebar" aria-label="Folders">
@@ -424,25 +472,32 @@ function GalleryFolderSidebar({
         </button>
       </div>
       {folders.length > 0 ? (
-        <button
-          type="button"
-          className="gallery-folder-sidebar-move-btn"
-          onClick={onOpenMoveFolder}
-          disabled={!canMove}
-        >
-          Move Selected to Folder
-        </button>
+        <>
+          <button
+            type="button"
+            className="gallery-folder-sidebar-move-btn"
+            onClick={onOpenMoveFolder}
+            disabled={!canMove}
+          >
+            Move Selected to Folder
+          </button>
+          {moveBlockedByEvidence ? (
+            <p className="gallery-folder-sidebar-loading">
+              Evidence attachments can only be deleted.
+            </p>
+          ) : null}
+        </>
       ) : null}
       <button
         type="button"
         className={
-          activeFolderId === null
+          activeSidebarFilter === null
             ? "gallery-folder-sidebar-all gallery-folder-sidebar-all--active"
             : "gallery-folder-sidebar-all"
         }
         onClick={onSelectAll}
       >
-        All Images
+        All Images / Unsorted
       </button>
       {loading ? (
         <p className="gallery-folder-sidebar-loading">Loading…</p>
@@ -451,7 +506,8 @@ function GalleryFolderSidebar({
       ) : (
         <ul className="gallery-folder-sidebar-list" aria-label="Folder list">
           {folders.map((folder) => {
-            const isActive = activeFolderId === folder.id;
+            const isActive =
+              activeSidebarFilter === "folder" && activeFolderId === folder.id;
             return (
               <li key={folder.id} className="gallery-folder-sidebar-row">
                 <button
@@ -478,6 +534,57 @@ function GalleryFolderSidebar({
           })}
         </ul>
       )}
+
+      <div className="gallery-evidence-sidebar">
+        <div className="gallery-evidence-sidebar-header">
+          <h3 className="gallery-evidence-sidebar-title">Evidence</h3>
+        </div>
+        {evidenceLoading ? (
+          <p className="gallery-folder-sidebar-loading">Loading…</p>
+        ) : (
+          <div className="gallery-evidence-sidebar-list" aria-label="Evidence list">
+            {evidenceSections.map((section) => (
+              <div key={section.ownerType} className="gallery-evidence-section">
+                <h4 className="gallery-evidence-section-title">{section.title}</h4>
+                {section.records.length === 0 ? (
+                  <p className="gallery-folder-sidebar-empty">No records</p>
+                ) : (
+                  <ul className="gallery-evidence-record-list">
+                    {section.records.map((record) => {
+                      const isActive =
+                        activeSidebarFilter === "evidence" &&
+                        activeEvidenceRecord?.ownerType === record.ownerType &&
+                        activeEvidenceRecord?.ownerId === record.ownerId;
+                      return (
+                        <li key={`${record.ownerType}:${record.ownerId}`}>
+                          <button
+                            type="button"
+                            className={
+                              isActive
+                                ? "gallery-folder-sidebar-item gallery-folder-sidebar-item--active gallery-evidence-record-item"
+                                : "gallery-folder-sidebar-item gallery-evidence-record-item"
+                            }
+                            onClick={() =>
+                              onSelectEvidenceRecord({
+                                ownerType: record.ownerType,
+                                ownerId: record.ownerId,
+                              })
+                            }
+                          >
+                            <span className="gallery-folder-sidebar-label">
+                              {record.label}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </aside>
   );
 }
@@ -502,6 +609,12 @@ export default function GalleryPage() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [foldersLoading, setFoldersLoading] = useState(false);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [evidenceSections, setEvidenceSections] = useState<EvidenceSection[]>([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+  const [activeEvidenceRecord, setActiveEvidenceRecord] =
+    useState<EvidenceRecordFilter | null>(null);
+  const [activeSidebarFilter, setActiveSidebarFilter] =
+    useState<ActiveSidebarFilter>(null);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -512,6 +625,15 @@ export default function GalleryPage() {
   const [movingFolder, setMovingFolder] = useState(false);
   const [moveFolderError, setMoveFolderError] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const [isMarkEvidenceOpen, setIsMarkEvidenceOpen] = useState(false);
+  const [markingEvidence, setMarkingEvidence] = useState(false);
+  const [markEvidenceError, setMarkEvidenceError] = useState<string | null>(null);
+  const [markEvidenceSelection, setMarkEvidenceSelection] =
+    useState<EvidenceRecordFilter | null>(null);
+  const [markEvidenceTarget, setMarkEvidenceTarget] = useState<{
+    galleryId: string;
+    imageName: string;
+  } | null>(null);
   const scopeRef = useRef<{ userId: string; homeId: string } | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isLoadingMoreRef = useRef(false);
@@ -519,6 +641,9 @@ export default function GalleryPage() {
   const lastPrefetchedStartRef = useRef(-1);
   const fileObjectByPathRef = useRef<Map<string, GalleryFile>>(new Map());
   const galleryIdByPathRef = useRef<Map<string, string | null>>(new Map());
+  const ownerTypeByPathRef = useRef<Map<string, string | null>>(new Map());
+  const ownerIdByPathRef = useRef<Map<string, string | null>>(new Map());
+  const folderIdByPathRef = useRef<Map<string, string | null>>(new Map());
   const loadingRef = useRef(loading);
 
   const {
@@ -549,6 +674,71 @@ export default function GalleryPage() {
     [selectedItems]
   );
 
+  const ownerTypeByGalleryId = useMemo(() => {
+    const map = new Map<string, string | null>();
+    cachedFiles.forEach((file) => {
+      if (file.galleryId) {
+        map.set(file.galleryId, file.ownerType);
+      }
+    });
+    return map;
+  }, [cachedFiles]);
+
+  const selectedHasEvidenceItems = useMemo(
+    () =>
+      selectedItems.some((item) =>
+        isEvidenceOwnerType(ownerTypeByGalleryId.get(item.id) ?? null)
+      ),
+    [selectedItems, ownerTypeByGalleryId]
+  );
+
+  const resolvedActiveFolder = useMemo(
+    () => folders.find((folder) => folder.id === activeFolderId) ?? null,
+    [folders, activeFolderId]
+  );
+
+  const resolvedActiveEvidenceRecord = useMemo(() => {
+    if (!activeEvidenceRecord) {
+      return null;
+    }
+    return (
+      evidenceSections
+        .flatMap((section) => section.records)
+        .find(
+          (record) =>
+            record.ownerType === activeEvidenceRecord.ownerType &&
+            record.ownerId === activeEvidenceRecord.ownerId
+        ) ?? null
+    );
+  }, [evidenceSections, activeEvidenceRecord]);
+
+  const isUploadEnabled = useMemo(
+    () =>
+      activeSidebarFilter === null ||
+      (activeSidebarFilter === "folder" && resolvedActiveFolder !== null) ||
+      (activeSidebarFilter === "evidence" &&
+        resolvedActiveEvidenceRecord !== null),
+    [activeSidebarFilter, resolvedActiveFolder, resolvedActiveEvidenceRecord]
+  );
+
+  const uploadButtonLabel = useMemo(() => {
+    if (activeSidebarFilter === null) {
+      return "Upload to Gallery";
+    }
+    if (activeSidebarFilter === "folder") {
+      return resolvedActiveFolder
+        ? `Upload to ${resolvedActiveFolder.name} Folder`
+        : "Select a folder to upload";
+    }
+    return resolvedActiveEvidenceRecord
+      ? `Upload to ${resolvedActiveEvidenceRecord.label}`
+      : "Select an evidence record";
+  }, [
+    activeSidebarFilter,
+    resolvedActiveFolder,
+    resolvedActiveEvidenceRecord,
+  ]);
+
   const availableGalleryIds = useMemo(() => {
     const ids = new Set<string>();
     for (const galleryId of galleryIdByPath.values()) {
@@ -578,6 +768,88 @@ export default function GalleryPage() {
     const result = await fetchFoldersForHome(userId, homeId);
     setFolders(result.ok ? result.folders : []);
     setFoldersLoading(false);
+  }, [state?.userId, state?.currentHomeId]);
+
+  const loadEvidenceSections = useCallback(async () => {
+    const userId = state?.userId;
+    const homeId = state?.currentHomeId;
+
+    if (!userId || !homeId) {
+      setEvidenceSections([]);
+      setEvidenceLoading(false);
+      return;
+    }
+
+    setEvidenceLoading(true);
+
+    const [maintenanceResult, communicationResult, noteResult] =
+      await Promise.all([
+        supabase
+          .from("maintenance_logs")
+          .select("id, title, description")
+          .eq("user_id", userId)
+          .eq("home_id", homeId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("apartment_communications")
+          .select("id, title, message")
+          .eq("user_id", userId)
+          .eq("home_id", homeId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("notes")
+          .select("id, title, content")
+          .eq("user_id", userId)
+          .eq("home_id", homeId)
+          .order("created_at", { ascending: false }),
+      ]);
+
+    const maintenanceRecords: EvidenceRecordItem[] = (
+      (maintenanceResult.data as
+        | { id: string; title: string | null; description: string | null }[]
+        | null) ?? []
+    ).map((row) => ({
+      ownerType: "maintenance",
+      ownerId: row.id,
+      label:
+        row.title?.trim() ||
+        row.description?.trim().slice(0, 40) ||
+        "Untitled maintenance",
+    }));
+
+    const communicationRecords: EvidenceRecordItem[] = (
+      (communicationResult.data as
+        | { id: string; title: string | null; message: string | null }[]
+        | null) ?? []
+    ).map((row) => ({
+      ownerType: "communication",
+      ownerId: row.id,
+      label:
+        row.title?.trim() ||
+        row.message?.trim().slice(0, 40) ||
+        "Untitled communication",
+    }));
+
+    const noteRecords: EvidenceRecordItem[] = (
+      (noteResult.data as
+        | { id: string; title: string | null; content: string | null }[]
+        | null) ?? []
+    ).map((row) => ({
+      ownerType: "note",
+      ownerId: row.id,
+      label: noteDisplayTitle(row.title, row.content ?? "") || "Untitled note",
+    }));
+
+    setEvidenceSections([
+      { ownerType: "maintenance", title: "Maintenance", records: maintenanceRecords },
+      {
+        ownerType: "communication",
+        title: "Communications",
+        records: communicationRecords,
+      },
+      { ownerType: "note", title: "Notes", records: noteRecords },
+    ]);
+    setEvidenceLoading(false);
   }, [state?.userId, state?.currentHomeId]);
 
   const signBatch = useCallback(
@@ -670,7 +942,10 @@ export default function GalleryPage() {
         fileObjectByPathRef.current,
         batch,
         signed,
-        galleryIdByPathRef.current
+        galleryIdByPathRef.current,
+        ownerTypeByPathRef.current,
+        ownerIdByPathRef.current,
+        folderIdByPathRef.current
       );
       const end = start + batch.length;
 
@@ -690,6 +965,9 @@ export default function GalleryPage() {
   const resetGallery = useCallback(() => {
     fileObjectByPathRef.current.clear();
     galleryIdByPathRef.current.clear();
+    ownerTypeByPathRef.current.clear();
+    ownerIdByPathRef.current.clear();
+    folderIdByPathRef.current.clear();
     setGalleryIdByPath(new Map());
     setAllPaths([]);
     setCachedFiles([]);
@@ -731,13 +1009,16 @@ export default function GalleryPage() {
     setLoading(true);
     setError(null);
     fileObjectByPathRef.current.clear();
+    ownerTypeByPathRef.current.clear();
+    ownerIdByPathRef.current.clear();
+    folderIdByPathRef.current.clear();
     setCachedFiles([]);
     setLoadedCount(0);
     setStaggerWindow({ start: 0, epoch: 0 });
     lastPrefetchedStartRef.current = -1;
 
     try {
-      if (activeFolderId) {
+      if (activeSidebarFilter !== "evidence" && activeFolderId) {
         const galleryMetaResult = await fetchGalleryItemsForHome(
           userId,
           homeId,
@@ -756,19 +1037,42 @@ export default function GalleryPage() {
           paths,
           galleryItems
         );
+        const filteredEntries =
+          activeSidebarFilter === "evidence" && activeEvidenceRecord !== null
+            ? displayEntries.filter(
+                (entry) =>
+                  entry.ownerType === activeEvidenceRecord.ownerType &&
+                  entry.ownerId === activeEvidenceRecord.ownerId
+              )
+            : activeSidebarFilter === "folder" && activeFolderId !== null
+              ? displayEntries.filter((entry) => entry.folderId === activeFolderId)
+              : displayEntries;
+        const filteredPaths = filteredEntries.map((entry) => entry.path);
         const idMap = new Map(
-          displayEntries.map((entry) => [entry.path, entry.galleryId])
+          filteredEntries.map((entry) => [entry.path, entry.galleryId])
+        );
+        const ownerTypeMap = new Map(
+          filteredEntries.map((entry) => [entry.path, entry.ownerType])
+        );
+        const ownerIdMap = new Map(
+          filteredEntries.map((entry) => [entry.path, entry.ownerId])
+        );
+        const folderIdMap = new Map(
+          filteredEntries.map((entry) => [entry.path, entry.folderId])
         );
         galleryIdByPathRef.current = idMap;
+        ownerTypeByPathRef.current = ownerTypeMap;
+        ownerIdByPathRef.current = ownerIdMap;
+        folderIdByPathRef.current = folderIdMap;
         setGalleryIdByPath(idMap);
-        setAllPaths(paths);
+        setAllPaths(filteredPaths);
 
-        if (paths.length === 0) {
+        if (filteredPaths.length === 0) {
           return;
         }
 
-        const end = await loadMorePaths(userId, homeId, paths, 0, false);
-        void prefetchNextBatch(userId, homeId, paths, end);
+        const end = await loadMorePaths(userId, homeId, filteredPaths, 0, false);
+        void prefetchNextBatch(userId, homeId, filteredPaths, end);
         return;
       }
 
@@ -794,19 +1098,42 @@ export default function GalleryPage() {
         paths,
         galleryItems
       );
+      const filteredEntries =
+        activeSidebarFilter === "evidence" && activeEvidenceRecord !== null
+          ? displayEntries.filter(
+              (entry) =>
+                entry.ownerType === activeEvidenceRecord.ownerType &&
+                entry.ownerId === activeEvidenceRecord.ownerId
+            )
+          : activeSidebarFilter === "folder" && activeFolderId !== null
+            ? displayEntries.filter((entry) => entry.folderId === activeFolderId)
+            : displayEntries;
+      const filteredPaths = filteredEntries.map((entry) => entry.path);
       const idMap = new Map(
-        displayEntries.map((entry) => [entry.path, entry.galleryId])
+        filteredEntries.map((entry) => [entry.path, entry.galleryId])
+      );
+      const ownerTypeMap = new Map(
+        filteredEntries.map((entry) => [entry.path, entry.ownerType])
+      );
+      const ownerIdMap = new Map(
+        filteredEntries.map((entry) => [entry.path, entry.ownerId])
+      );
+      const folderIdMap = new Map(
+        filteredEntries.map((entry) => [entry.path, entry.folderId])
       );
       galleryIdByPathRef.current = idMap;
+      ownerTypeByPathRef.current = ownerTypeMap;
+      ownerIdByPathRef.current = ownerIdMap;
+      folderIdByPathRef.current = folderIdMap;
       setGalleryIdByPath(idMap);
-      setAllPaths(paths);
+      setAllPaths(filteredPaths);
 
-      if (paths.length === 0) {
+      if (filteredPaths.length === 0) {
         return;
       }
 
-      const end = await loadMorePaths(userId, homeId, paths, 0, false);
-      void prefetchNextBatch(userId, homeId, paths, end);
+      const end = await loadMorePaths(userId, homeId, filteredPaths, 0, false);
+      void prefetchNextBatch(userId, homeId, filteredPaths, end);
     } catch (err) {
       setAllPaths([]);
       setError(
@@ -815,7 +1142,15 @@ export default function GalleryPage() {
     } finally {
       setLoading(false);
     }
-  }, [state, resetGallery, loadMorePaths, prefetchNextBatch, activeFolderId]);
+  }, [
+    state,
+    resetGallery,
+    loadMorePaths,
+    prefetchNextBatch,
+    activeFolderId,
+    activeEvidenceRecord,
+    activeSidebarFilter,
+  ]);
 
   const refetchGallery = loadInitial;
 
@@ -879,6 +1214,9 @@ export default function GalleryPage() {
       for (const [path, galleryId] of galleryIdByPathRef.current.entries()) {
         if (galleryId && succeededIds.has(galleryId)) {
           galleryIdByPathRef.current.delete(path);
+          ownerTypeByPathRef.current.delete(path);
+          ownerIdByPathRef.current.delete(path);
+          folderIdByPathRef.current.delete(path);
           fileObjectByPathRef.current.delete(path);
         }
       }
@@ -933,8 +1271,33 @@ export default function GalleryPage() {
   }, [loadFolders]);
 
   useEffect(() => {
+    void loadEvidenceSections();
+  }, [loadEvidenceSections]);
+
+  useEffect(() => {
     setActiveFolderId(null);
+    setActiveEvidenceRecord(null);
+    setActiveSidebarFilter(null);
   }, [state?.currentHomeId]);
+
+  useEffect(() => {
+    if (!activeEvidenceRecord) {
+      return;
+    }
+    const stillExists = evidenceSections.some((section) =>
+      section.records.some(
+        (record) =>
+          record.ownerType === activeEvidenceRecord.ownerType &&
+          record.ownerId === activeEvidenceRecord.ownerId
+      )
+    );
+    if (!stillExists) {
+      setActiveEvidenceRecord(null);
+      if (activeSidebarFilter === "evidence") {
+        setActiveSidebarFilter(null);
+      }
+    }
+  }, [evidenceSections, activeEvidenceRecord, activeSidebarFilter]);
 
   const closeCreateFolderModal = useCallback(() => {
     if (creatingFolder) {
@@ -1021,6 +1384,11 @@ export default function GalleryPage() {
       return;
     }
 
+    if (selectedHasEvidenceItems) {
+      setMoveFolderError("Evidence-linked images cannot be moved to folders.");
+      return;
+    }
+
     const targetFolderId = moveTargetId ?? null;
 
     const ids = selectedItems.map((item) => item.id).filter(Boolean);
@@ -1051,6 +1419,77 @@ export default function GalleryPage() {
     setMoveFolderError(null);
     setMoveTargetId(null);
     clearSelection();
+    await refetchGallery();
+  };
+
+  const closeMarkEvidenceModal = useCallback(() => {
+    if (markingEvidence) {
+      return;
+    }
+    setIsMarkEvidenceOpen(false);
+    setMarkEvidenceError(null);
+    setMarkEvidenceSelection(null);
+    setMarkEvidenceTarget(null);
+  }, [markingEvidence]);
+
+  const openMarkEvidenceModal = useCallback((file: GalleryFile) => {
+    if (activeSidebarFilter === "evidence") {
+      return;
+    }
+    if (!file.galleryId || file.ownerType !== null) {
+      return;
+    }
+    setMarkEvidenceError(null);
+    setMarkEvidenceSelection(null);
+    setMarkEvidenceTarget({
+      galleryId: file.galleryId,
+      imageName: file.name,
+    });
+    setIsMarkEvidenceOpen(true);
+  }, [activeSidebarFilter]);
+
+  const handleMarkEvidenceSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const userId = state?.userId;
+    const homeId = state?.currentHomeId;
+
+    if (!userId || !homeId) {
+      setMarkEvidenceError("Select an active home before marking evidence.");
+      return;
+    }
+    if (!markEvidenceTarget) {
+      setMarkEvidenceError("Select an image to mark as evidence.");
+      return;
+    }
+    if (!markEvidenceSelection) {
+      setMarkEvidenceError("Select a record for this evidence image.");
+      return;
+    }
+
+    setMarkingEvidence(true);
+    setMarkEvidenceError(null);
+
+    const { error } = await supabase
+      .from("gallery")
+      .update({
+        owner_type: markEvidenceSelection.ownerType,
+        owner_id: markEvidenceSelection.ownerId,
+      })
+      .eq("id", markEvidenceTarget.galleryId)
+      .eq("user_id", userId)
+      .eq("home_id", homeId);
+
+    if (error) {
+      setMarkingEvidence(false);
+      setMarkEvidenceError(error.message || "Could not mark image as evidence.");
+      return;
+    }
+
+    setMarkingEvidence(false);
+    setIsMarkEvidenceOpen(false);
+    setMarkEvidenceSelection(null);
+    setMarkEvidenceTarget(null);
+    setMarkEvidenceError(null);
     await refetchGallery();
   };
 
@@ -1108,10 +1547,21 @@ export default function GalleryPage() {
   }, [showGrid, hasMore, loadNextBatch, loadedCount]);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!isUploadEnabled) {
+      e.target.value = "";
+      return;
+    }
+
     const fileList = Array.from(e.target.files ?? []);
     e.target.value = "";
 
     if (!fileList.length) return;
+
+    const uploadContextSnapshot = {
+      mode: activeSidebarFilter,
+      folderId: activeFolderId,
+      evidenceRecord: activeEvidenceRecord,
+    };
 
     setUploading(true);
     setError(null);
@@ -1131,12 +1581,35 @@ export default function GalleryPage() {
       return;
     }
 
+    let uploadContext: UploadGalleryContext = "gallery";
+    let uploadOwnerId: string | undefined;
+    let uploadFolderId: string | undefined;
+    let uploadLogContext = "gallery";
+
+    if (
+      uploadContextSnapshot.mode === "evidence" &&
+      uploadContextSnapshot.evidenceRecord
+    ) {
+      uploadContext = uploadContextSnapshot.evidenceRecord.ownerType;
+      uploadOwnerId = uploadContextSnapshot.evidenceRecord.ownerId;
+      uploadLogContext = uploadContextSnapshot.evidenceRecord.ownerType;
+    } else if (
+      uploadContextSnapshot.mode === "folder" &&
+      uploadContextSnapshot.folderId
+    ) {
+      uploadContext = "gallery";
+      uploadFolderId = uploadContextSnapshot.folderId;
+      uploadLogContext = "gallery";
+    }
+
     const uploadResult = await uploadFilesToGallery({
       userId,
       homeId,
       files: fileList,
-      logContext: "gallery",
-      context: "gallery",
+      logContext: uploadLogContext,
+      context: uploadContext,
+      ownerId: uploadOwnerId,
+      folderId: uploadFolderId,
     });
 
     if (!uploadResult.ok) {
@@ -1174,15 +1647,19 @@ export default function GalleryPage() {
               multiple
               className="gallery-file-input"
               onChange={handleFileChange}
-              disabled={uploading}
+              disabled={uploading || !isUploadEnabled}
             />
             <div className="gallery-toolbar-row">
               <div className="gallery-toolbar-upload">
                 <label
-                  htmlFor={uploading ? undefined : "gallery-upload-input"}
+                  htmlFor={
+                    uploading || !isUploadEnabled
+                      ? undefined
+                      : "gallery-upload-input"
+                  }
                   className="dashboard-btn-primary gallery-toolbar-upload-btn"
                   style={
-                    uploading
+                    uploading || !isUploadEnabled
                       ? {
                           opacity: 0.6,
                           pointerEvents: "none",
@@ -1191,7 +1668,7 @@ export default function GalleryPage() {
                       : { cursor: "pointer", display: "inline-block" }
                   }
                 >
-                  {uploading ? "Uploading…" : "Upload"}
+                  {uploading ? "Uploading…" : uploadButtonLabel}
                 </label>
               </div>
               {selectedItems.length > 0 ? (
@@ -1221,6 +1698,10 @@ export default function GalleryPage() {
                 const isSelected =
                   file.galleryId != null && selectedIdSet.has(file.galleryId);
                 const selectable = file.galleryId != null && !bulkDeleting;
+                const canMarkAsEvidence =
+                  activeSidebarFilter !== "evidence" &&
+                  file.galleryId !== null &&
+                  file.ownerType === null;
 
                 return (
                   <li
@@ -1258,6 +1739,19 @@ export default function GalleryPage() {
                     tabIndex={selectable ? 0 : undefined}
                     aria-pressed={selectable ? isSelected : undefined}
                   >
+                    {canMarkAsEvidence ? (
+                      <button
+                        type="button"
+                        className="gallery-grid-mark-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void openMarkEvidenceModal(file);
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        Mark as Evidence
+                      </button>
+                    ) : null}
                     <GalleryGridThumbnail
                       file={file}
                       globalIndex={fileIndexByPath.get(file.path) ?? 0}
@@ -1289,6 +1783,10 @@ export default function GalleryPage() {
                 const isSelected =
                   file.galleryId != null && selectedIdSet.has(file.galleryId);
                 const selectable = file.galleryId != null && !bulkDeleting;
+                const canMarkAsEvidence =
+                  activeSidebarFilter !== "evidence" &&
+                  file.galleryId !== null &&
+                  file.ownerType === null;
 
                 return (
                   <li
@@ -1326,6 +1824,19 @@ export default function GalleryPage() {
                     tabIndex={selectable ? 0 : undefined}
                     aria-pressed={selectable ? isSelected : undefined}
                   >
+                    {canMarkAsEvidence ? (
+                      <button
+                        type="button"
+                        className="gallery-grid-mark-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void openMarkEvidenceModal(file);
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        Mark as Evidence
+                      </button>
+                    ) : null}
                     <GalleryGridThumbnail
                       file={file}
                       globalIndex={fileIndexByPath.get(file.path) ?? 0}
@@ -1365,12 +1876,28 @@ export default function GalleryPage() {
         <GalleryFolderSidebar
           folders={folders}
           loading={foldersLoading}
+          evidenceSections={evidenceSections}
+          evidenceLoading={evidenceLoading}
           activeFolderId={activeFolderId}
-          canMove={selectedItems.length > 0}
+          activeEvidenceRecord={activeEvidenceRecord}
+          activeSidebarFilter={activeSidebarFilter}
+          canMove={selectedItems.length > 0 && !selectedHasEvidenceItems}
+          moveBlockedByEvidence={selectedItems.length > 0 && selectedHasEvidenceItems}
           onOpenMoveFolder={openMoveFolderModal}
           onOpenCreateFolder={openCreateFolderModal}
-          onSelectAll={() => setActiveFolderId(null)}
-          onSelectFolder={(folderId) => setActiveFolderId(folderId)}
+          onSelectAll={() => {
+            setActiveFolderId(null);
+            setActiveEvidenceRecord(null);
+            setActiveSidebarFilter(null);
+          }}
+          onSelectFolder={(folderId) => {
+            setActiveFolderId(folderId);
+            setActiveSidebarFilter("folder");
+          }}
+          onSelectEvidenceRecord={(record) => {
+            setActiveEvidenceRecord(record);
+            setActiveSidebarFilter("evidence");
+          }}
         />
       </div>
 
@@ -1383,6 +1910,98 @@ export default function GalleryPage() {
         onClose={closeCreateFolderModal}
         onSubmit={(e) => void handleCreateFolderSubmit(e)}
       />
+
+      {isMarkEvidenceOpen ? (
+        <div
+          className="gallery-folder-modal-backdrop"
+          role="presentation"
+          onClick={markingEvidence ? undefined : closeMarkEvidenceModal}
+        >
+          <div
+            className="gallery-folder-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mark-evidence-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="mark-evidence-title" className="gallery-folder-modal-title">
+              Mark as Evidence
+            </h2>
+            {markEvidenceTarget ? (
+              <p className="dashboard-subtitle" style={{ margin: "0 0 10px" }}>
+                {markEvidenceTarget.imageName}
+              </p>
+            ) : null}
+
+            <form
+              className="gallery-folder-modal-form"
+              onSubmit={(e) => void handleMarkEvidenceSubmit(e)}
+            >
+              <div className="gallery-evidence-mark-sections">
+                {evidenceSections.map((section) => (
+                  <div key={section.ownerType} className="gallery-evidence-section">
+                    <h4 className="gallery-evidence-section-title">{section.title}</h4>
+                    {section.records.length === 0 ? (
+                      <p className="gallery-folder-sidebar-empty">No records</p>
+                    ) : (
+                      <div className="gallery-folder-move-options">
+                        {section.records.map((record) => (
+                          <button
+                            key={`${record.ownerType}:${record.ownerId}`}
+                            type="button"
+                            className={
+                              markEvidenceSelection?.ownerType ===
+                                record.ownerType &&
+                              markEvidenceSelection?.ownerId === record.ownerId
+                                ? "gallery-folder-move-option gallery-folder-move-option--active"
+                                : "gallery-folder-move-option"
+                            }
+                            onClick={() =>
+                              setMarkEvidenceSelection({
+                                ownerType: record.ownerType,
+                                ownerId: record.ownerId,
+                              })
+                            }
+                            disabled={markingEvidence}
+                          >
+                            <span className="gallery-folder-sidebar-label">
+                              {record.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {markEvidenceError ? (
+                <p className="gallery-folder-modal-error" role="alert">
+                  {markEvidenceError}
+                </p>
+              ) : null}
+
+              <div className="gallery-folder-modal-actions">
+                <button
+                  type="button"
+                  className="gallery-folder-modal-btn-secondary"
+                  onClick={closeMarkEvidenceModal}
+                  disabled={markingEvidence}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="gallery-folder-modal-btn-primary"
+                  disabled={markingEvidence || !markEvidenceSelection}
+                >
+                  {markingEvidence ? "Saving…" : "Mark as Evidence"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {isMoveFolderOpen ? (
         <div

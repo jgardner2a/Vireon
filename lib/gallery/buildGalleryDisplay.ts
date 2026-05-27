@@ -4,6 +4,9 @@ export type GalleryDisplayEntry = {
   path: string;
   name: string;
   galleryId: string | null;
+  ownerType: string | null;
+  ownerId: string | null;
+  folderId: string | null;
 };
 
 function fileNameFromPath(path: string): string {
@@ -45,6 +48,9 @@ export function buildGalleryDisplayEntriesFromPaths(
       path,
       name: fileNameFromPath(path),
       galleryId: row?.id ?? null,
+      ownerType: row?.owner_type ?? null,
+      ownerId: row?.owner_id ?? null,
+      folderId: row?.folder_id ?? null,
     };
   });
 }

@@ -9,6 +9,7 @@ import {
   ROUTE_DASHBOARD_COMMUNICATIONS,
   ROUTE_DASHBOARD_GALLERY,
   ROUTE_DASHBOARD_MAINTENANCE,
+  ROUTE_DASHBOARD_MY_HOME,
   ROUTE_DASHBOARD_NOTES,
   ROUTE_DASHBOARD_VAULT,
 } from "@/lib/appNavigation";
@@ -48,6 +49,7 @@ export default function DashboardLayout({
 
   const onDashboardRoute = pathname === ROUTE_DASHBOARD;
   const dashboardActive = onDashboardRoute && hash === "";
+  const myHomeActive = pathname === ROUTE_DASHBOARD_MY_HOME;
   const previousHomesActive = onDashboardRoute && hash === "#previous-homes";
   const galleryActive = pathname === ROUTE_DASHBOARD_GALLERY;
   const maintenanceActive = pathname === ROUTE_DASHBOARD_MAINTENANCE;
@@ -76,10 +78,16 @@ export default function DashboardLayout({
             Dashboard
           </Link>
 
-          <div className="dashboard-nav-sub" aria-label="Dashboard sections">
-            <div className="dashboard-nav-section" aria-label="My Home">
-              <p className="dashboard-nav-section-title">My Home</p>
+          <div className="dashboard-nav-sub" aria-label="Dashboard modules">
+            <div className="dashboard-nav-section" aria-label="Core Modules">
+              <p className="dashboard-nav-section-title">Core Modules</p>
               <div className="dashboard-nav-sub">
+                <Link
+                  href={ROUTE_DASHBOARD_MY_HOME}
+                  className={navLinkClass(myHomeActive)}
+                >
+                  My Home
+                </Link>
                 <Link
                   href={ROUTE_DASHBOARD_GALLERY}
                   className={navLinkClass(galleryActive)}
@@ -117,7 +125,7 @@ export default function DashboardLayout({
               href={`${ROUTE_DASHBOARD}#previous-homes`}
               className={navLinkClass(previousHomesActive)}
             >
-              Previous Homes
+              Property History
             </Link>
           </div>
         </nav>

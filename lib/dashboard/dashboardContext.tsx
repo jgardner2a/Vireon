@@ -21,7 +21,7 @@ import {
 } from "@/lib/sessionCache";
 import { useAuthSession } from "@/lib/useAuthSession";
 
-/** Set by createHome / setCurrentHome; next provider refresh refetches homes. */
+/** Set by createAndActivateHome / createHome / setCurrentHome; next provider refresh refetches homes. */
 let pendingHomesCacheInvalidation = false;
 
 export function invalidateDashboardHomesCache(): void {

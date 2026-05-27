@@ -31,6 +31,7 @@ export const APP_TOP_NAV_ITEMS: AppTopNavItem[] = [
 export const ROUTE_HOME = "/";
 
 export const ROUTE_DASHBOARD = "/dashboard";
+export const ROUTE_DASHBOARD_MY_HOME = "/dashboard/my-home";
 
 export const ROUTE_DASHBOARD_GALLERY = "/dashboard/gallery";
 

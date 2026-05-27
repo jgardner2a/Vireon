@@ -106,7 +106,7 @@ export async function getCachedCurrentHomeId(
   return homeId;
 }
 
-/** Clear active-home cache after createHome / setCurrentHome. User id cache is kept. */
+/** Clear active-home cache after createAndActivateHome / createHome / setCurrentHome. User id cache is kept. */
 export function invalidateHomeCache(): void {
   cachedCurrentHomeId = null;
   removeSessionStorage(HOME_ID_KEY);

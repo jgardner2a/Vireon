@@ -670,6 +670,55 @@ html {
   color: #888;
 }
 
+.gallery-evidence-sidebar {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.gallery-evidence-sidebar-header {
+  margin-bottom: 8px;
+}
+
+.gallery-evidence-sidebar-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.gallery-evidence-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gallery-evidence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gallery-evidence-section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+
+.gallery-evidence-record-list {
+  margin: 0;
+  padding: 0 0 0 10px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gallery-evidence-record-item {
+  padding-left: 12px;
+}
+
 @media (max-width: 900px) {
   .gallery-page-layout {
     flex-direction: column;
@@ -754,6 +803,26 @@ html {
 .gallery-grid-checkbox:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.gallery-grid-mark-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #111;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.gallery-grid-mark-btn:hover {
+  background: #fff;
+  border-color: #9ca3af;
 }
 
 .gallery-toolbar.dashboard-card {
@@ -860,6 +929,15 @@ html {
 
 .gallery-loading-more--visible {
   visibility: visible;
+}
+
+.gallery-evidence-mark-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 48vh;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
