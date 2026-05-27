@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
@@ -8,14 +9,14 @@ import {
   invalidateSignedUrlCacheForUser,
   resolveSignedGalleryUrls,
 } from "@/lib/gallerySignedUrlCache";
-import {
-  buildGalleryGroupSections,
-  fetchGalleryGroupIndex,
-  type GalleryGroupRow,
-  type GalleryGroupSection,
-} from "@/lib/gallery/galleryGroups";
 import { buildGalleryDisplayEntriesFromPaths } from "@/lib/gallery/buildGalleryDisplay";
+import { buildPathsFromGalleryItems } from "@/lib/gallery/buildGalleryPaths";
 import { deleteGalleryItem } from "@/lib/gallery/deleteGalleryItem";
+import {
+  createFolder,
+  fetchFoldersForHome,
+  type Folder,
+} from "@/lib/gallery/folders";
 import { fetchGalleryItemsForHome } from "@/lib/gallery/galleryRecords";
 import {
   useGallerySelection,
@@ -68,11 +69,6 @@ type SignedGalleryFile = {
   path: string;
   name: string;
   url: string;
-};
-
-type FolderFilter = {
-  ownerType: string;
-  ownerId: string;
 };
 
 function buildPathsFromList(
@@ -288,81 +284,199 @@ function GalleryInlineSelectionActions({
   );
 }
 
-function GalleryGroupsPanel({
+function CreateFolderModal({
+  open,
+  name,
+  error,
+  creating,
+  onNameChange,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  name: string;
+  error: string | null;
+  creating: boolean;
+  onNameChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: (e: FormEvent) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !creating) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, creating, onClose]);
+
+  if (!open) {
+    return null;
+  }
+
+  const trimmed = name.trim();
+
+  return (
+    <div
+      className="gallery-folder-modal-backdrop"
+      role="presentation"
+      onClick={creating ? undefined : onClose}
+    >
+      <div
+        className="gallery-folder-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-folder-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="create-folder-title" className="gallery-folder-modal-title">
+          Create Folder
+        </h2>
+
+        <form className="gallery-folder-modal-form" onSubmit={onSubmit}>
+          <div className="gallery-folder-modal-field">
+            <label htmlFor="create-folder-name">Folder name</label>
+            <input
+              ref={inputRef}
+              id="create-folder-name"
+              type="text"
+              value={name}
+              onChange={(e) => onNameChange(e.target.value)}
+              placeholder="Folder name"
+              disabled={creating}
+              autoComplete="off"
+            />
+          </div>
+
+          {error ? (
+            <p className="gallery-folder-modal-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="gallery-folder-modal-actions">
+            <button
+              type="button"
+              className="gallery-folder-modal-btn-secondary"
+              onClick={onClose}
+              disabled={creating}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="gallery-folder-modal-btn-primary"
+              disabled={creating || !trimmed}
+            >
+              {creating ? "Creating…" : "Create Folder"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function GalleryFolderSidebar({
+  folders,
   loading,
-  sections,
-  activeFilterKey,
+  activeFolderId,
+  canMove,
+  onOpenMoveFolder,
+  onOpenCreateFolder,
   onSelectAll,
   onSelectFolder,
 }: {
+  folders: Folder[];
   loading: boolean;
-  sections: GalleryGroupSection[];
-  activeFilterKey: string | null;
+  activeFolderId: string | null;
+  canMove: boolean;
+  onOpenMoveFolder: () => void;
+  onOpenCreateFolder: () => void;
   onSelectAll: () => void;
-  onSelectFolder: (filter: FolderFilter) => void;
+  onSelectFolder: (folderId: string) => void;
 }) {
   return (
-    <aside className="gallery-panel" aria-label="Gallery groups">
-      <h2 className="gallery-panel-title">Folders</h2>
+    <aside className="gallery-folder-sidebar" aria-label="Folders">
+      <div className="gallery-folder-sidebar-header">
+        <h3 className="gallery-folder-sidebar-header-title">Folders</h3>
+        <button
+          type="button"
+          className="gallery-folder-sidebar-header-btn"
+          onClick={onOpenCreateFolder}
+        >
+          +
+        </button>
+      </div>
+      {folders.length > 0 ? (
+        <button
+          type="button"
+          className="gallery-folder-sidebar-move-btn"
+          onClick={onOpenMoveFolder}
+          disabled={!canMove}
+        >
+          Move Selected to Folder
+        </button>
+      ) : null}
       <button
         type="button"
         className={
-          activeFilterKey === null
-            ? "gallery-panel-all gallery-panel-all--active"
-            : "gallery-panel-all"
+          activeFolderId === null
+            ? "gallery-folder-sidebar-all gallery-folder-sidebar-all--active"
+            : "gallery-folder-sidebar-all"
         }
         onClick={onSelectAll}
       >
         All Images
       </button>
       {loading ? (
-        <p className="gallery-panel-loading">Loading…</p>
+        <p className="gallery-folder-sidebar-loading">Loading…</p>
+      ) : folders.length === 0 ? (
+        <p className="gallery-folder-sidebar-empty">No folders yet</p>
       ) : (
-        sections.map((section) => (
-          <div key={section.ownerType} className="gallery-panel-section">
-            <h3 className="gallery-panel-section-title">{section.title}</h3>
-            {section.items.length === 0 ? (
-              <p className="gallery-panel-empty">No linked images</p>
-            ) : (
-              <ul
-                className="gallery-panel-folder-list"
-                aria-label={`${section.title} folders`}
-              >
-                {section.items.map((item) => {
-                  const isActive = activeFilterKey === item.key;
-                  return (
-                    <li key={item.key} className="gallery-panel-folder-row">
-                      <button
-                        type="button"
-                        className={
-                          isActive
-                            ? "gallery-panel-folder gallery-panel-folder--active"
-                            : "gallery-panel-folder"
-                        }
-                        onClick={() =>
-                          onSelectFolder({
-                            ownerType: item.ownerType,
-                            ownerId: item.ownerId,
-                          })
-                        }
-                      >
-                        <span
-                          className="gallery-panel-folder-icon"
-                          aria-hidden
-                        >
-                          📁
-                        </span>
-                        <span className="gallery-panel-folder-label">
-                          {item.label}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        ))
+        <ul className="gallery-folder-sidebar-list" aria-label="Folder list">
+          {folders.map((folder) => {
+            const isActive = activeFolderId === folder.id;
+            return (
+              <li key={folder.id} className="gallery-folder-sidebar-row">
+                <button
+                  type="button"
+                  className={
+                    isActive
+                      ? "gallery-folder-sidebar-item gallery-folder-sidebar-item--active"
+                      : "gallery-folder-sidebar-item"
+                  }
+                  onClick={() => onSelectFolder(folder.id)}
+                >
+                  <span
+                    className="gallery-folder-sidebar-icon"
+                    aria-hidden
+                  >
+                    📁
+                  </span>
+                  <span className="gallery-folder-sidebar-label">
+                    {folder.name}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </aside>
   );
@@ -385,12 +499,19 @@ export default function GalleryPage() {
     start: 0,
     epoch: 0,
   });
-  const [groupRows, setGroupRows] = useState<GalleryGroupRow[]>([]);
-  const [groupSections, setGroupSections] = useState<GalleryGroupSection[]>([]);
-  const [groupsLoading, setGroupsLoading] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<FolderFilter | null>(
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [foldersLoading, setFoldersLoading] = useState(false);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [createFolderError, setCreateFolderError] = useState<string | null>(
     null
   );
+  const [isMoveFolderOpen, setIsMoveFolderOpen] = useState(false);
+  const [movingFolder, setMovingFolder] = useState(false);
+  const [moveFolderError, setMoveFolderError] = useState<string | null>(null);
+  const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
   const scopeRef = useRef<{ userId: string; homeId: string } | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const isLoadingMoreRef = useRef(false);
@@ -411,10 +532,6 @@ export default function GalleryPage() {
   );
 
   loadingRef.current = loading;
-
-  const activeFilterKey = selectedFolder
-    ? `${selectedFolder.ownerType}:${selectedFolder.ownerId}`
-    : null;
 
   const visibleSlice = useMemo(
     () => buildVisibleGallerySlice(cachedFiles, loadedCount),
@@ -446,35 +563,22 @@ export default function GalleryPage() {
     syncSelection(availableGalleryIds);
   }, [availableGalleryIds, syncSelection]);
 
-  const loadGroupIndex = useCallback(async () => {
+  const loadFolders = useCallback(async () => {
     const userId = state?.userId;
     const homeId = state?.currentHomeId;
 
     if (!userId || !homeId) {
-      setGroupRows([]);
-      setGroupSections([]);
+      setFolders([]);
+      setFoldersLoading(false);
       return;
     }
 
-    setGroupsLoading(true);
+    setFoldersLoading(true);
 
-    try {
-      const result = await fetchGalleryGroupIndex(userId, homeId);
-      if (!result.ok) {
-        setGroupRows([]);
-        setGroupSections([]);
-        return;
-      }
-
-      setGroupRows(result.rows);
-      const sections = await buildGalleryGroupSections(userId, result.rows);
-      setGroupSections(sections);
-    } finally {
-      setGroupsLoading(false);
-    }
+    const result = await fetchFoldersForHome(userId, homeId);
+    setFolders(result.ok ? result.folders : []);
+    setFoldersLoading(false);
   }, [state?.userId, state?.currentHomeId]);
-
-  // Grouping sidebar disabled during minimal upload validation.
 
   const signBatch = useCallback(
     async (userId: string, homeId: string, paths: string[]) => {
@@ -633,6 +737,41 @@ export default function GalleryPage() {
     lastPrefetchedStartRef.current = -1;
 
     try {
+      if (activeFolderId) {
+        const galleryMetaResult = await fetchGalleryItemsForHome(
+          userId,
+          homeId,
+          { folderId: activeFolderId }
+        );
+
+        if (!galleryMetaResult.ok) {
+          setAllPaths([]);
+          setError(galleryMetaResult.message);
+          return;
+        }
+
+        const galleryItems = galleryMetaResult.items;
+        const paths = buildPathsFromGalleryItems(galleryItems);
+        const displayEntries = buildGalleryDisplayEntriesFromPaths(
+          paths,
+          galleryItems
+        );
+        const idMap = new Map(
+          displayEntries.map((entry) => [entry.path, entry.galleryId])
+        );
+        galleryIdByPathRef.current = idMap;
+        setGalleryIdByPath(idMap);
+        setAllPaths(paths);
+
+        if (paths.length === 0) {
+          return;
+        }
+
+        const end = await loadMorePaths(userId, homeId, paths, 0, false);
+        void prefetchNextBatch(userId, homeId, paths, end);
+        return;
+      }
+
       const [{ data: listed, error: listError }, galleryMetaResult] =
         await Promise.all([
           getCachedStorageList(userId, homeId, "gallery", () =>
@@ -676,7 +815,7 @@ export default function GalleryPage() {
     } finally {
       setLoading(false);
     }
-  }, [state, resetGallery, loadMorePaths, prefetchNextBatch]);
+  }, [state, resetGallery, loadMorePaths, prefetchNextBatch, activeFolderId]);
 
   const refetchGallery = loadInitial;
 
@@ -789,6 +928,132 @@ export default function GalleryPage() {
     void loadInitial();
   }, [state, loadInitial]);
 
+  useEffect(() => {
+    void loadFolders();
+  }, [loadFolders]);
+
+  useEffect(() => {
+    setActiveFolderId(null);
+  }, [state?.currentHomeId]);
+
+  const closeCreateFolderModal = useCallback(() => {
+    if (creatingFolder) {
+      return;
+    }
+
+    setIsCreateFolderOpen(false);
+    setNewFolderName("");
+    setCreateFolderError(null);
+  }, [creatingFolder]);
+
+  const openCreateFolderModal = useCallback(() => {
+    setNewFolderName("");
+    setCreateFolderError(null);
+    setIsCreateFolderOpen(true);
+  }, []);
+
+  const handleCreateFolderSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const userId = state?.userId;
+    const homeId = state?.currentHomeId;
+
+    if (!userId || !homeId) {
+      setCreateFolderError("Select an active home before creating a folder.");
+      return;
+    }
+
+    const trimmed = newFolderName.trim();
+    if (!trimmed) {
+      setCreateFolderError("Please enter a folder name.");
+      return;
+    }
+
+    setCreatingFolder(true);
+    setCreateFolderError(null);
+
+    const result = await createFolder(userId, homeId, trimmed);
+
+    if (!result.ok) {
+      setCreatingFolder(false);
+      setCreateFolderError(result.message);
+      return;
+    }
+
+    setCreatingFolder(false);
+    setIsCreateFolderOpen(false);
+    setNewFolderName("");
+    setCreateFolderError(null);
+    await loadFolders();
+  };
+
+  const closeMoveFolderModal = useCallback(() => {
+    if (movingFolder) {
+      return;
+    }
+    setIsMoveFolderOpen(false);
+    setMoveFolderError(null);
+    setMoveTargetId(null);
+  }, [movingFolder]);
+
+  const openMoveFolderModal = useCallback(() => {
+    if (folders.length === 0 || selectedItems.length === 0) {
+      return;
+    }
+    setMoveFolderError(null);
+    setMoveTargetId(activeFolderId ?? null);
+    setIsMoveFolderOpen(true);
+  }, [folders.length, selectedItems.length, activeFolderId]);
+
+  const handleMoveFolderSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const userId = state?.userId;
+    const homeId = state?.currentHomeId;
+
+    if (!userId || !homeId) {
+      setMoveFolderError("Select an active home before moving images.");
+      return;
+    }
+
+    if (selectedItems.length === 0) {
+      setMoveFolderError("Select at least one image to move.");
+      return;
+    }
+
+    const targetFolderId = moveTargetId ?? null;
+
+    const ids = selectedItems.map((item) => item.id).filter(Boolean);
+    if (ids.length === 0) {
+      setMoveFolderError("Selected images are no longer available.");
+      return;
+    }
+
+    setMovingFolder(true);
+    setMoveFolderError(null);
+
+    const { error } = await supabase
+      .from("gallery")
+      .update({ folder_id: targetFolderId })
+      .in("id", ids)
+      .eq("user_id", userId)
+      .eq("home_id", homeId);
+
+    if (error) {
+      console.error("[gallery] move to folder", error);
+      setMovingFolder(false);
+      setMoveFolderError(error.message || "Could not move images.");
+      return;
+    }
+
+    setMovingFolder(false);
+    setIsMoveFolderOpen(false);
+    setMoveFolderError(null);
+    setMoveTargetId(null);
+    clearSelection();
+    await refetchGallery();
+  };
+
   const loadNextBatch = useCallback(async () => {
     if (isLoadingMoreRef.current || loadingRef.current) {
       return;
@@ -842,7 +1107,7 @@ export default function GalleryPage() {
     };
   }, [showGrid, hasMore, loadNextBatch, loadedCount]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const fileList = Array.from(e.target.files ?? []);
     e.target.value = "";
 
@@ -896,50 +1161,50 @@ export default function GalleryPage() {
         </p>
       ) : null}
 
-      <section
-        className="dashboard-card gallery-toolbar"
-        aria-label="Gallery actions"
-      >
-        <input
-          id="gallery-upload-input"
-          type="file"
-          accept="image/*"
-          multiple
-          className="gallery-file-input"
-          onChange={handleFileChange}
-          disabled={uploading}
-        />
-        <div className="gallery-toolbar-row">
-          <div className="gallery-toolbar-upload">
-            <label
-              htmlFor={uploading ? undefined : "gallery-upload-input"}
-              className="dashboard-btn-primary gallery-toolbar-upload-btn"
-              style={
-                uploading
-                  ? {
-                      opacity: 0.6,
-                      pointerEvents: "none",
-                      cursor: "not-allowed",
-                    }
-                  : { cursor: "pointer", display: "inline-block" }
-              }
-            >
-              {uploading ? "Uploading…" : "Upload"}
-            </label>
-          </div>
-          {selectedItems.length > 0 ? (
-            <GalleryInlineSelectionActions
-              count={selectedItems.length}
-              onClear={clearSelection}
-              onDeleteSelected={() => void handleBulkDelete()}
-              deleting={bulkDeleting}
-            />
-          ) : null}
-        </div>
-      </section>
-
       <div className="gallery-page-layout">
         <div className="gallery-page-main">
+          <section
+            className="dashboard-card gallery-toolbar"
+            aria-label="Gallery actions"
+          >
+            <input
+              id="gallery-upload-input"
+              type="file"
+              accept="image/*"
+              multiple
+              className="gallery-file-input"
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            <div className="gallery-toolbar-row">
+              <div className="gallery-toolbar-upload">
+                <label
+                  htmlFor={uploading ? undefined : "gallery-upload-input"}
+                  className="dashboard-btn-primary gallery-toolbar-upload-btn"
+                  style={
+                    uploading
+                      ? {
+                          opacity: 0.6,
+                          pointerEvents: "none",
+                          cursor: "not-allowed",
+                        }
+                      : { cursor: "pointer", display: "inline-block" }
+                  }
+                >
+                  {uploading ? "Uploading…" : "Upload"}
+                </label>
+              </div>
+              {selectedItems.length > 0 ? (
+                <GalleryInlineSelectionActions
+                  count={selectedItems.length}
+                  onClear={clearSelection}
+                  onDeleteSelected={() => void handleBulkDelete()}
+                  deleting={bulkDeleting}
+                />
+              ) : null}
+            </div>
+          </section>
+
           {!loading && cachedFiles.length === 0 ? (
             <p className="dashboard-subtitle" style={{ margin: "16px 0 0" }}>
               No images uploaded
@@ -1097,16 +1362,129 @@ export default function GalleryPage() {
           ) : null}
         </div>
 
-        {false ? (
-          <GalleryGroupsPanel
-            loading={groupsLoading}
-            sections={groupSections}
-            activeFilterKey={activeFilterKey}
-            onSelectAll={() => setSelectedFolder(null)}
-            onSelectFolder={(filter) => setSelectedFolder(filter)}
-          />
-        ) : null}
+        <GalleryFolderSidebar
+          folders={folders}
+          loading={foldersLoading}
+          activeFolderId={activeFolderId}
+          canMove={selectedItems.length > 0}
+          onOpenMoveFolder={openMoveFolderModal}
+          onOpenCreateFolder={openCreateFolderModal}
+          onSelectAll={() => setActiveFolderId(null)}
+          onSelectFolder={(folderId) => setActiveFolderId(folderId)}
+        />
       </div>
+
+      <CreateFolderModal
+        open={isCreateFolderOpen}
+        name={newFolderName}
+        error={createFolderError}
+        creating={creatingFolder}
+        onNameChange={setNewFolderName}
+        onClose={closeCreateFolderModal}
+        onSubmit={(e) => void handleCreateFolderSubmit(e)}
+      />
+
+      {isMoveFolderOpen ? (
+        <div
+          className="gallery-folder-modal-backdrop"
+          role="presentation"
+          onClick={movingFolder ? undefined : closeMoveFolderModal}
+        >
+          <div
+            className="gallery-folder-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-folder-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="move-folder-title" className="gallery-folder-modal-title">
+              Move to Folder
+            </h2>
+
+            <form
+              className="gallery-folder-modal-form"
+              onSubmit={(e) => void handleMoveFolderSubmit(e)}
+            >
+              <div className="gallery-folder-modal-field">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 13,
+                    color: "#555",
+                  }}
+                >
+                  Choose a folder for the selected images.
+                </p>
+              </div>
+
+              <div className="gallery-folder-move-options">
+                <button
+                  type="button"
+                  className={
+                    moveTargetId === null
+                      ? "gallery-folder-move-option gallery-folder-move-option--active"
+                      : "gallery-folder-move-option"
+                  }
+                  onClick={() => setMoveTargetId(null)}
+                  disabled={movingFolder}
+                >
+                  <span className="gallery-folder-sidebar-icon" aria-hidden>
+                    📁
+                  </span>
+                  <span className="gallery-folder-sidebar-label">
+                    All Images / Unsorted
+                  </span>
+                </button>
+
+                {folders.map((folder) => (
+                  <button
+                    key={folder.id}
+                    type="button"
+                    className={
+                      moveTargetId === folder.id
+                        ? "gallery-folder-move-option gallery-folder-move-option--active"
+                        : "gallery-folder-move-option"
+                    }
+                    onClick={() => setMoveTargetId(folder.id)}
+                    disabled={movingFolder}
+                  >
+                    <span className="gallery-folder-sidebar-icon" aria-hidden>
+                      📁
+                    </span>
+                    <span className="gallery-folder-sidebar-label">
+                      {folder.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {moveFolderError ? (
+                <p className="gallery-folder-modal-error" role="alert">
+                  {moveFolderError}
+                </p>
+              ) : null}
+
+              <div className="gallery-folder-modal-actions">
+                <button
+                  type="button"
+                  className="gallery-folder-modal-btn-secondary"
+                  onClick={closeMoveFolderModal}
+                  disabled={movingFolder}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="gallery-folder-modal-btn-primary"
+                  disabled={movingFolder}
+                >
+                  {movingFolder ? "Moving…" : "Move"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

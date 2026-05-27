@@ -53,6 +53,8 @@ function mapRow(row: GalleryRow): GalleryItem {
 export type FetchGalleryItemsOptions = {
   /** Include soft-deleted / reconciliation rows (for drift detection). */
   includeInactive?: boolean;
+  /** When set, only rows for this folder (folders table id). */
+  folderId?: string;
 };
 
 export async function fetchGalleryItemsForHome(
@@ -62,12 +64,17 @@ export async function fetchGalleryItemsForHome(
 ): Promise<
   { ok: true; items: GalleryItem[] } | { ok: false; message: string }
 > {
-  const { data, error } = await supabase
+  let query = supabase
     .from("gallery")
     .select("*")
     .eq("user_id", userId)
-    .eq("home_id", homeId)
-    .order("created_at", { ascending: false });
+    .eq("home_id", homeId);
+
+  if (options?.folderId) {
+    query = query.eq("folder_id", options.folderId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     console.error("[gallery] fetch for home", error);
