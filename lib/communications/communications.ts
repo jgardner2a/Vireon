@@ -1,3 +1,4 @@
+import { cleanupAttachmentsAfterLogDelete } from "@/lib/attachments/logDeleteAttachmentCleanup";
 import {
   DEFAULT_COMMUNICATION_CATEGORY,
   normalizeCommunicationCategory,
@@ -299,11 +300,31 @@ export async function deleteCommunication(
     );
   }
 
+  const queryUserId = auth.userId;
+
+  const { data: attachmentRows, error: fetchAttachmentsError } = await supabase
+    .from("attachments")
+    .select("id, storage_path")
+    .eq("owner_type", "communication")
+    .eq("owner_id", id)
+    .eq("user_id", queryUserId);
+
+  if (fetchAttachmentsError) {
+    logCommunicationsSupabase("delete fetch attachments", {
+      error: fetchAttachmentsError,
+    });
+  }
+
+  const attachments = (attachmentRows ?? []).map((row) => ({
+    id: String((row as { id: string }).id),
+    storage_path: String((row as { storage_path: string }).storage_path ?? ""),
+  }));
+
   const { error } = await supabase
     .from("apartment_communications")
     .delete()
     .eq("id", id)
-    .eq("user_id", auth.userId);
+    .eq("user_id", queryUserId);
 
   if (error) {
     logCommunicationsSupabase("delete", { error });
@@ -315,6 +336,8 @@ export async function deleteCommunication(
       ),
     };
   }
+
+  await cleanupAttachmentsAfterLogDelete("communication", attachments);
 
   return { ok: true };
 }

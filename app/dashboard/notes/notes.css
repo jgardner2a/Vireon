@@ -52,6 +52,11 @@
   overflow: hidden;
 }
 
+.notes-card--selected {
+  border-color: #111;
+  box-shadow: 0 0 0 2px #111;
+}
+
 .notes-card-hit {
   display: block;
   width: 100%;
@@ -198,6 +203,24 @@
   font-size: 12px;
   color: #666;
   line-height: 1.4;
+}
+
+.notes-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notes-attachment-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
 }
 
 .notes-attachment-pending {

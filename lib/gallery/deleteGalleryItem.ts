@@ -142,6 +142,99 @@ async function removeGalleryStorageObject(
   };
 }
 
+async function fetchGalleryStoragePath(
+  galleryId: string,
+  userId: string,
+  homeId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("gallery")
+    .select("storage_path")
+    .eq("id", galleryId)
+    .eq("user_id", userId)
+    .eq("home_id", homeId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[gallery] fetch storage_path before delete", error);
+    return null;
+  }
+
+  const path = (data as { storage_path?: string } | null)?.storage_path?.trim();
+  return path || null;
+}
+
+async function countOtherGalleryRowsForStoragePath(
+  storagePath: string,
+  userId: string,
+  homeId: string,
+  excludeGalleryId: string | null
+): Promise<number> {
+  const normalized = storagePath.trim();
+  if (!normalized) {
+    return 0;
+  }
+
+  let query = supabase
+    .from("gallery")
+    .select("id", { count: "exact", head: true })
+    .eq("storage_path", normalized)
+    .eq("user_id", userId)
+    .eq("home_id", homeId);
+
+  if (excludeGalleryId) {
+    query = query.neq("id", excludeGalleryId);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    console.error("[gallery] count gallery rows for storage_path", error);
+    return 1;
+  }
+
+  return count ?? 0;
+}
+
+/**
+ * Cleans up attachment rows when no remaining gallery row references storage_path
+ * (e.g. after copy-to-folder soft duplicates). Gallery ownership is the lifecycle
+ * authority; attachments cleanup is best-effort and non-blocking.
+ */
+async function deleteAttachmentsIfNoGalleryReferences(
+  storagePath: string,
+  userId: string,
+  homeId: string,
+  excludeGalleryId: string | null
+): Promise<void> {
+  const normalized = storagePath.trim();
+  if (!normalized) {
+    return;
+  }
+
+  const remainingGalleryRows = await countOtherGalleryRowsForStoragePath(
+    normalized,
+    userId,
+    homeId,
+    excludeGalleryId
+  );
+
+  if (remainingGalleryRows > 0) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("attachments")
+    .delete()
+    .eq("storage_path", normalized)
+    .eq("user_id", userId)
+    .eq("home_id", homeId);
+
+  if (error) {
+    console.error("[gallery] attachment cleanup on delete", error);
+  }
+}
+
 async function deleteGalleryRow(
   galleryId: string,
   userId: string
@@ -204,6 +297,26 @@ export async function deleteGalleryItem(
 
   inFlightDeletes.add(lockKey);
 
+  let storagePathForAttachments = filePath || null;
+  if (galleryId) {
+    const fetchedPath = await fetchGalleryStoragePath(galleryId, userId, homeId);
+    if (fetchedPath) {
+      storagePathForAttachments = fetchedPath;
+    }
+  }
+
+  const cleanupAttachments = async (excludeGalleryId: string | null) => {
+    if (!storagePathForAttachments) {
+      return;
+    }
+    await deleteAttachmentsIfNoGalleryReferences(
+      storagePathForAttachments,
+      userId,
+      homeId,
+      excludeGalleryId
+    );
+  };
+
   try {
     if (galleryId) {
       try {
@@ -226,6 +339,7 @@ export async function deleteGalleryItem(
     }
 
     if (!galleryId) {
+      await cleanupAttachments(null);
       invalidateGalleryCaches(userId, homeId);
       return { ok: true };
     }
@@ -244,15 +358,18 @@ export async function deleteGalleryItem(
         };
       }
 
+      await cleanupAttachments(galleryId);
       invalidateGalleryCaches(userId, homeId);
       return { ok: true };
     }
 
     if (!dbResult.deleted) {
+      await cleanupAttachments(galleryId);
       invalidateGalleryCaches(userId, homeId);
       return { ok: true };
     }
 
+    await cleanupAttachments(null);
     invalidateGalleryCaches(userId, homeId);
     return { ok: true };
   } finally {

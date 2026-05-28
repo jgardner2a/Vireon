@@ -11,7 +11,9 @@ import {
 } from "@/lib/gallerySignedUrlCache";
 import { buildGalleryDisplayEntriesFromPaths } from "@/lib/gallery/buildGalleryDisplay";
 import { buildPathsFromGalleryItems } from "@/lib/gallery/buildGalleryPaths";
+import { copyGalleryItemsToFolder } from "@/lib/gallery/copyGalleryItemsToFolder";
 import { deleteGalleryItem } from "@/lib/gallery/deleteGalleryItem";
+import { moveGalleryItemsToFolder } from "@/lib/gallery/moveGalleryItemsToFolder";
 import {
   createFolder,
   fetchFoldersForHome,
@@ -22,6 +24,7 @@ import {
   useGallerySelection,
   type GallerySelectionItem,
 } from "@/lib/gallery/useGallerySelection";
+import { markGalleryAsEvidence } from "@/lib/gallery/markGalleryAsEvidence";
 import { uploadFilesToGallery } from "@/lib/gallery/uploadStorageFiles";
 import {
   getCachedStorageList,
@@ -280,6 +283,121 @@ function GalleryGridThumbnail({
   );
 }
 
+function resolveDeleteFileNames(
+  items: GallerySelectionItem[],
+  cachedFiles: GalleryFile[]
+): string[] {
+  const names: string[] = [];
+  for (const item of items) {
+    const file = cachedFiles.find((f) => f.galleryId === item.id);
+    const fromPath = item.filePath.split("/").pop()?.trim();
+    const name = file?.name?.trim() || fromPath;
+    if (name) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+function DeleteConfirmModal({
+  open,
+  fileNames,
+  itemCount,
+  deleting,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  fileNames: string[];
+  itemCount: number;
+  deleting: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !deleting) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, deleting, onClose]);
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      className="gallery-folder-modal-backdrop"
+      role="presentation"
+      onClick={deleting ? undefined : onClose}
+    >
+      <div
+        className="gallery-folder-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-gallery-item-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2
+          id="delete-gallery-item-title"
+          className="gallery-folder-modal-title"
+        >
+          Delete item?
+        </h2>
+
+        <p className="dashboard-subtitle" style={{ margin: "0 0 12px" }}>
+          Are you sure you want to delete this item? This action cannot be
+          undone.
+        </p>
+
+        {itemCount > 1 ? (
+          <p className="dashboard-subtitle" style={{ margin: "0 0 8px" }}>
+            {itemCount} items selected
+          </p>
+        ) : null}
+
+        {fileNames.length > 0 ? (
+          <ul
+            className="dashboard-subtitle"
+            style={{ margin: "0 0 16px", paddingLeft: "1.25rem" }}
+          >
+            {fileNames.map((name, index) => (
+              <li key={`${name}-${index}`}>{name}</li>
+            ))}
+          </ul>
+        ) : null}
+
+        <div className="gallery-folder-modal-actions">
+          <button
+            type="button"
+            className="gallery-folder-modal-btn-secondary"
+            onClick={onClose}
+            disabled={deleting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="gallery-bulk-btn gallery-bulk-btn--danger"
+            onClick={onConfirm}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting…" : "Confirm Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GalleryInlineSelectionActions({
   count,
   onClear,
@@ -437,8 +555,10 @@ function GalleryFolderSidebar({
   activeEvidenceRecord,
   activeSidebarFilter,
   canMove,
+  canCopy,
   moveBlockedByEvidence,
   onOpenMoveFolder,
+  onOpenCopyFolder,
   onOpenCreateFolder,
   onSelectAll,
   onSelectFolder,
@@ -452,8 +572,10 @@ function GalleryFolderSidebar({
   activeEvidenceRecord: EvidenceRecordFilter | null;
   activeSidebarFilter: ActiveSidebarFilter;
   canMove: boolean;
+  canCopy: boolean;
   moveBlockedByEvidence: boolean;
   onOpenMoveFolder: () => void;
+  onOpenCopyFolder: () => void;
   onOpenCreateFolder: () => void;
   onSelectAll: () => void;
   onSelectFolder: (folderId: string) => void;
@@ -480,6 +602,14 @@ function GalleryFolderSidebar({
             disabled={!canMove}
           >
             Move Selected to Folder
+          </button>
+          <button
+            type="button"
+            className="gallery-folder-sidebar-move-btn"
+            onClick={onOpenCopyFolder}
+            disabled={!canCopy}
+          >
+            Copy to Folder
           </button>
           {moveBlockedByEvidence ? (
             <p className="gallery-folder-sidebar-loading">
@@ -598,6 +728,10 @@ export default function GalleryPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteItems, setPendingDeleteItems] = useState<
+    GallerySelectionItem[] | null
+  >(null);
   const [galleryIdByPath, setGalleryIdByPath] = useState(
     () => new Map<string, string | null>()
   );
@@ -625,6 +759,10 @@ export default function GalleryPage() {
   const [movingFolder, setMovingFolder] = useState(false);
   const [moveFolderError, setMoveFolderError] = useState<string | null>(null);
   const [moveTargetId, setMoveTargetId] = useState<string | null>(null);
+  const [isCopyFolderOpen, setIsCopyFolderOpen] = useState(false);
+  const [copyingFolder, setCopyingFolder] = useState(false);
+  const [copyFolderError, setCopyFolderError] = useState<string | null>(null);
+  const [copyTargetId, setCopyTargetId] = useState<string | null>(null);
   const [isMarkEvidenceOpen, setIsMarkEvidenceOpen] = useState(false);
   const [markingEvidence, setMarkingEvidence] = useState(false);
   const [markEvidenceError, setMarkEvidenceError] = useState<string | null>(null);
@@ -691,6 +829,30 @@ export default function GalleryPage() {
       ),
     [selectedItems, ownerTypeByGalleryId]
   );
+
+  const folderIdByGalleryId = useMemo(() => {
+    const map = new Map<string, string | null>();
+    cachedFiles.forEach((file) => {
+      if (file.galleryId) {
+        map.set(file.galleryId, file.folderId);
+      }
+    });
+    return map;
+  }, [cachedFiles]);
+
+  const canCopyToFolder = useMemo(() => {
+    if (selectedItems.length === 0) {
+      return false;
+    }
+
+    return selectedItems.some((item) => {
+      const folderId = folderIdByGalleryId.get(item.id) ?? null;
+      const ownerType = ownerTypeByGalleryId.get(item.id) ?? null;
+      const inFolder = folderId !== null && folderId !== "";
+      const isEvidence = isEvidenceOwnerType(ownerType);
+      return inFolder || isEvidence;
+    });
+  }, [selectedItems, folderIdByGalleryId, ownerTypeByGalleryId]);
 
   const resolvedActiveFolder = useMemo(
     () => folders.find((folder) => folder.id === activeFolderId) ?? null,
@@ -1154,7 +1316,30 @@ export default function GalleryPage() {
 
   const refetchGallery = loadInitial;
 
-  const handleBulkDelete = useCallback(async () => {
+  const closeDeleteConfirmModal = useCallback(() => {
+    if (bulkDeleting) {
+      return;
+    }
+    setDeleteConfirmOpen(false);
+    setPendingDeleteItems(null);
+  }, [bulkDeleting]);
+
+  const openDeleteConfirmModal = useCallback(() => {
+    if (selectedItems.length === 0 || bulkDeleting) {
+      return;
+    }
+    setPendingDeleteItems([...selectedItems]);
+    setDeleteConfirmOpen(true);
+  }, [selectedItems, bulkDeleting]);
+
+  const pendingDeleteFileNames = useMemo(() => {
+    if (!pendingDeleteItems?.length) {
+      return [];
+    }
+    return resolveDeleteFileNames(pendingDeleteItems, cachedFiles);
+  }, [pendingDeleteItems, cachedFiles]);
+
+  const handleBulkDelete = useCallback(async (itemsToDelete: GallerySelectionItem[]) => {
     const userId = state?.userId;
     const homeId = state?.currentHomeId;
 
@@ -1163,11 +1348,9 @@ export default function GalleryPage() {
       return;
     }
 
-    if (selectedItems.length === 0 || bulkDeleting) {
+    if (itemsToDelete.length === 0 || bulkDeleting) {
       return;
     }
-
-    const itemsToDelete = selectedItems;
     setBulkDeleting(true);
     setError(null);
 
@@ -1252,11 +1435,20 @@ export default function GalleryPage() {
   }, [
     state?.userId,
     state?.currentHomeId,
-    selectedItems,
     bulkDeleting,
     clearSelection,
     refetchGallery,
   ]);
+
+  const confirmPendingDelete = useCallback(async () => {
+    const items = pendingDeleteItems;
+    if (!items?.length || bulkDeleting) {
+      return;
+    }
+    setDeleteConfirmOpen(false);
+    await handleBulkDelete(items);
+    setPendingDeleteItems(null);
+  }, [pendingDeleteItems, bulkDeleting, handleBulkDelete]);
 
   useEffect(() => {
     if (!state?.userId) {
@@ -1391,8 +1583,8 @@ export default function GalleryPage() {
 
     const targetFolderId = moveTargetId ?? null;
 
-    const ids = selectedItems.map((item) => item.id).filter(Boolean);
-    if (ids.length === 0) {
+    const galleryIds = selectedItems.map((item) => item.id).filter(Boolean);
+    if (galleryIds.length === 0) {
       setMoveFolderError("Selected images are no longer available.");
       return;
     }
@@ -1400,17 +1592,16 @@ export default function GalleryPage() {
     setMovingFolder(true);
     setMoveFolderError(null);
 
-    const { error } = await supabase
-      .from("gallery")
-      .update({ folder_id: targetFolderId })
-      .in("id", ids)
-      .eq("user_id", userId)
-      .eq("home_id", homeId);
+    const result = await moveGalleryItemsToFolder({
+      userId,
+      homeId,
+      galleryIds,
+      folderId: targetFolderId,
+    });
 
-    if (error) {
-      console.error("[gallery] move to folder", error);
+    if (!result.ok) {
       setMovingFolder(false);
-      setMoveFolderError(error.message || "Could not move images.");
+      setMoveFolderError(result.message);
       return;
     }
 
@@ -1418,6 +1609,71 @@ export default function GalleryPage() {
     setIsMoveFolderOpen(false);
     setMoveFolderError(null);
     setMoveTargetId(null);
+    clearSelection();
+    await refetchGallery();
+  };
+
+  const closeCopyFolderModal = useCallback(() => {
+    if (copyingFolder) {
+      return;
+    }
+    setIsCopyFolderOpen(false);
+    setCopyFolderError(null);
+    setCopyTargetId(null);
+  }, [copyingFolder]);
+
+  const openCopyFolderModal = useCallback(() => {
+    if (folders.length === 0 || selectedItems.length === 0) {
+      return;
+    }
+    setCopyFolderError(null);
+    setCopyTargetId(activeFolderId ?? null);
+    setIsCopyFolderOpen(true);
+  }, [folders.length, selectedItems.length, activeFolderId]);
+
+  const handleCopyFolderSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const userId = state?.userId;
+    const homeId = state?.currentHomeId;
+
+    if (!userId || !homeId) {
+      setCopyFolderError("Select an active home before copying images.");
+      return;
+    }
+
+    if (selectedItems.length === 0) {
+      setCopyFolderError("Select at least one image to copy.");
+      return;
+    }
+
+    const targetFolderId = copyTargetId ?? null;
+    const ids = selectedItems.map((item) => item.id).filter(Boolean);
+    if (ids.length === 0) {
+      setCopyFolderError("Selected images are no longer available.");
+      return;
+    }
+
+    setCopyingFolder(true);
+    setCopyFolderError(null);
+
+    const result = await copyGalleryItemsToFolder({
+      userId,
+      homeId,
+      galleryIds: ids,
+      folderId: targetFolderId,
+    });
+
+    if (!result.ok) {
+      setCopyingFolder(false);
+      setCopyFolderError(result.message);
+      return;
+    }
+
+    setCopyingFolder(false);
+    setIsCopyFolderOpen(false);
+    setCopyFolderError(null);
+    setCopyTargetId(null);
     clearSelection();
     await refetchGallery();
   };
@@ -1469,19 +1725,17 @@ export default function GalleryPage() {
     setMarkingEvidence(true);
     setMarkEvidenceError(null);
 
-    const { error } = await supabase
-      .from("gallery")
-      .update({
-        owner_type: markEvidenceSelection.ownerType,
-        owner_id: markEvidenceSelection.ownerId,
-      })
-      .eq("id", markEvidenceTarget.galleryId)
-      .eq("user_id", userId)
-      .eq("home_id", homeId);
+    const result = await markGalleryAsEvidence({
+      userId,
+      homeId,
+      galleryId: markEvidenceTarget.galleryId,
+      ownerType: markEvidenceSelection.ownerType,
+      ownerId: markEvidenceSelection.ownerId,
+    });
 
-    if (error) {
+    if (!result.ok) {
       setMarkingEvidence(false);
-      setMarkEvidenceError(error.message || "Could not mark image as evidence.");
+      setMarkEvidenceError(result.message);
       return;
     }
 
@@ -1675,7 +1929,7 @@ export default function GalleryPage() {
                 <GalleryInlineSelectionActions
                   count={selectedItems.length}
                   onClear={clearSelection}
-                  onDeleteSelected={() => void handleBulkDelete()}
+                  onDeleteSelected={openDeleteConfirmModal}
                   deleting={bulkDeleting}
                 />
               ) : null}
@@ -1882,8 +2136,10 @@ export default function GalleryPage() {
           activeEvidenceRecord={activeEvidenceRecord}
           activeSidebarFilter={activeSidebarFilter}
           canMove={selectedItems.length > 0 && !selectedHasEvidenceItems}
+          canCopy={canCopyToFolder}
           moveBlockedByEvidence={selectedItems.length > 0 && selectedHasEvidenceItems}
           onOpenMoveFolder={openMoveFolderModal}
+          onOpenCopyFolder={openCopyFolderModal}
           onOpenCreateFolder={openCreateFolderModal}
           onSelectAll={() => {
             setActiveFolderId(null);
@@ -1909,6 +2165,15 @@ export default function GalleryPage() {
         onNameChange={setNewFolderName}
         onClose={closeCreateFolderModal}
         onSubmit={(e) => void handleCreateFolderSubmit(e)}
+      />
+
+      <DeleteConfirmModal
+        open={deleteConfirmOpen}
+        fileNames={pendingDeleteFileNames}
+        itemCount={pendingDeleteItems?.length ?? 0}
+        deleting={bulkDeleting}
+        onClose={closeDeleteConfirmModal}
+        onConfirm={() => void confirmPendingDelete()}
       />
 
       {isMarkEvidenceOpen ? (
@@ -2098,6 +2363,109 @@ export default function GalleryPage() {
                   disabled={movingFolder}
                 >
                   {movingFolder ? "Moving…" : "Move"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {isCopyFolderOpen ? (
+        <div
+          className="gallery-folder-modal-backdrop"
+          role="presentation"
+          onClick={copyingFolder ? undefined : closeCopyFolderModal}
+        >
+          <div
+            className="gallery-folder-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="copy-folder-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="copy-folder-title" className="gallery-folder-modal-title">
+              Copy to Folder
+            </h2>
+
+            <form
+              className="gallery-folder-modal-form"
+              onSubmit={(e) => void handleCopyFolderSubmit(e)}
+            >
+              <div className="gallery-folder-modal-field">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 13,
+                    color: "#555",
+                  }}
+                >
+                  Create a new gallery entry in the chosen folder. The original
+                  image is not moved or duplicated in storage.
+                </p>
+              </div>
+
+              <div className="gallery-folder-move-options">
+                <button
+                  type="button"
+                  className={
+                    copyTargetId === null
+                      ? "gallery-folder-move-option gallery-folder-move-option--active"
+                      : "gallery-folder-move-option"
+                  }
+                  onClick={() => setCopyTargetId(null)}
+                  disabled={copyingFolder}
+                >
+                  <span className="gallery-folder-sidebar-icon" aria-hidden>
+                    📁
+                  </span>
+                  <span className="gallery-folder-sidebar-label">
+                    All Images / Unsorted
+                  </span>
+                </button>
+
+                {folders.map((folder) => (
+                  <button
+                    key={folder.id}
+                    type="button"
+                    className={
+                      copyTargetId === folder.id
+                        ? "gallery-folder-move-option gallery-folder-move-option--active"
+                        : "gallery-folder-move-option"
+                    }
+                    onClick={() => setCopyTargetId(folder.id)}
+                    disabled={copyingFolder}
+                  >
+                    <span className="gallery-folder-sidebar-icon" aria-hidden>
+                      📁
+                    </span>
+                    <span className="gallery-folder-sidebar-label">
+                      {folder.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {copyFolderError ? (
+                <p className="gallery-folder-modal-error" role="alert">
+                  {copyFolderError}
+                </p>
+              ) : null}
+
+              <div className="gallery-folder-modal-actions">
+                <button
+                  type="button"
+                  className="gallery-folder-modal-btn-secondary"
+                  onClick={closeCopyFolderModal}
+                  disabled={copyingFolder}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="gallery-folder-modal-btn-primary"
+                  disabled={copyingFolder}
+                >
+                  {copyingFolder ? "Copying…" : "Copy"}
                 </button>
               </div>
             </form>

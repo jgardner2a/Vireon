@@ -16,6 +16,7 @@ import {
 import { DashboardProvider } from "@/lib/dashboard/dashboardContext";
 import { useAuthSession } from "@/lib/useAuthSession";
 import "./dashboard.css";
+import "./dashboard-split.css";
 
 function navLinkClass(active: boolean) {
   return active
@@ -89,12 +90,6 @@ export default function DashboardLayout({
                   My Home
                 </Link>
                 <Link
-                  href={ROUTE_DASHBOARD_GALLERY}
-                  className={navLinkClass(galleryActive)}
-                >
-                  Gallery
-                </Link>
-                <Link
                   href={ROUTE_DASHBOARD_MAINTENANCE}
                   className={navLinkClass(maintenanceActive)}
                 >
@@ -111,6 +106,12 @@ export default function DashboardLayout({
                   className={navLinkClass(notesActive)}
                 >
                   Notes
+                </Link>
+                <Link
+                  href={ROUTE_DASHBOARD_GALLERY}
+                  className={navLinkClass(galleryActive)}
+                >
+                  Gallery
                 </Link>
                 <Link
                   href={ROUTE_DASHBOARD_VAULT}

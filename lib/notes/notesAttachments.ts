@@ -1,14 +1,14 @@
 import { uploadFilesToGallery } from "@/lib/gallery/uploadStorageFiles";
 import { supabase } from "@/lib/supabaseClient";
 
-export type UploadMaintenanceAttachmentsInput = {
+export type UploadNoteAttachmentsInput = {
   userId: string;
   homeId: string;
-  maintenanceLogId: string;
+  noteId: string;
   files: File[];
 };
 
-export type MaintenanceAttachment = {
+export type NoteAttachment = {
   id: string;
   storage_path: string;
   file_name: string | null;
@@ -34,24 +34,24 @@ function deriveAttachmentFileType(mimeType: string): "image" | "pdf" | "other" {
   return "other";
 }
 
-export async function fetchMaintenanceAttachments(
+export async function fetchNoteAttachments(
   userId: string,
   homeId: string,
-  maintenanceLogId: string
+  noteId: string
 ): Promise<
-  { ok: true; items: MaintenanceAttachment[] } | { ok: false; message: string }
+  { ok: true; items: NoteAttachment[] } | { ok: false; message: string }
 > {
   const { data, error } = await supabase
     .from("attachments")
     .select("id, storage_path, file_name, file_type, mime_type")
     .eq("user_id", userId)
     .eq("home_id", homeId)
-    .eq("owner_type", "maintenance")
-    .eq("owner_id", maintenanceLogId)
+    .eq("owner_type", "note")
+    .eq("owner_id", noteId)
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("[maintenance] fetch attachments", error);
+    console.error("[notes] fetch attachments", error);
     return {
       ok: false,
       message: error.message || "Could not load attachments.",
@@ -76,8 +76,8 @@ export async function fetchMaintenanceAttachments(
  * Gallery pipeline (storage + gallery row) then attachments row per file.
  * Gallery insert failure skips attachment insert; attachment failure leaves gallery row.
  */
-export async function uploadMaintenanceAttachments(
-  input: UploadMaintenanceAttachmentsInput
+export async function uploadNoteAttachments(
+  input: UploadNoteAttachmentsInput
 ): Promise<
   { ok: true; storagePaths: string[] } | { ok: false; message: string }
 > {
@@ -93,9 +93,9 @@ export async function uploadMaintenanceAttachments(
     userId: input.userId,
     homeId: input.homeId,
     files: imageFiles,
-    logContext: "maintenance",
-    context: "maintenance",
-    ownerId: input.maintenanceLogId,
+    logContext: "notes",
+    context: "note",
+    ownerId: input.noteId,
   });
 
   if (!galleryResult.ok) {
@@ -110,8 +110,8 @@ export async function uploadMaintenanceAttachments(
     const { error: insertError } = await supabase.from("attachments").insert({
       user_id: input.userId,
       home_id: input.homeId,
-      owner_type: "maintenance",
-      owner_id: input.maintenanceLogId,
+      owner_type: "note",
+      owner_id: input.noteId,
       file_type: deriveAttachmentFileType(mimeType),
       file_name: file.name,
       storage_path: path,
@@ -120,7 +120,7 @@ export async function uploadMaintenanceAttachments(
     });
 
     if (insertError) {
-      console.error("[maintenance] attachment insert", insertError);
+      console.error("[notes] attachment insert", insertError);
       return {
         ok: false,
         message: insertError.message || "Could not save attachment.",

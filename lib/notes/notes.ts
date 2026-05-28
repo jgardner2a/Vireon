@@ -1,3 +1,4 @@
+import { cleanupAttachmentsAfterLogDelete } from "@/lib/attachments/logDeleteAttachmentCleanup";
 import {
   DEFAULT_NOTE_CATEGORY,
   normalizeCategory,
@@ -127,6 +128,22 @@ export async function deleteNote(
   noteId: string,
   userId: string
 ): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data: attachmentRows, error: fetchAttachmentsError } = await supabase
+    .from("attachments")
+    .select("id, storage_path")
+    .eq("owner_type", "note")
+    .eq("owner_id", noteId)
+    .eq("user_id", userId);
+
+  if (fetchAttachmentsError) {
+    console.error("[notes] delete fetch attachments", fetchAttachmentsError);
+  }
+
+  const attachments = (attachmentRows ?? []).map((row) => ({
+    id: String((row as { id: string }).id),
+    storage_path: String((row as { storage_path: string }).storage_path ?? ""),
+  }));
+
   const { error } = await supabase
     .from("notes")
     .delete()
@@ -140,6 +157,8 @@ export async function deleteNote(
       message: error.message || "Could not delete note.",
     };
   }
+
+  await cleanupAttachmentsAfterLogDelete("note", attachments);
 
   return { ok: true };
 }

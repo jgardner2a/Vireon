@@ -104,10 +104,14 @@ function FeatureSection({
 }
 
 function HomeCardContent({ home }: { home: Home }) {
+  const addressLine = home.address.trim();
+
   return (
     <>
       <p className="my-home-home-name">{home.name}</p>
-      <p className="my-home-home-address">{home.address}</p>
+      <p className="my-home-home-address">
+        {addressLine || "No address on file"}
+      </p>
     </>
   );
 }
@@ -125,7 +129,7 @@ function scrollToHashTarget() {
   }
 }
 
-function PreviousHomesSection() {
+function PreviousHomesSection({ homes }: { homes: Home[] }) {
   return (
     <section
       id="previous-homes"
@@ -135,11 +139,23 @@ function PreviousHomesSection() {
       <h2 id="previous-homes-heading" className="my-home-section-title">
         Property History
       </h2>
-      <div className="my-home-card">
-        <p className="my-home-empty" style={{ margin: 0 }}>
-          No previous properties yet
-        </p>
-      </div>
+      {homes.length === 0 ? (
+        <div className="my-home-card">
+          <p className="my-home-empty" style={{ margin: 0 }}>
+            No previous properties
+          </p>
+        </div>
+      ) : (
+        homes.map((home) => (
+          <div
+            key={home.id}
+            className="my-home-card"
+            style={{ marginBottom: 12 }}
+          >
+            <HomeCardContent home={home} />
+          </div>
+        ))
+      )}
     </section>
   );
 }
@@ -152,6 +168,7 @@ export default function DashboardPage() {
   const homes = state?.homes ?? [];
   const currentHomeId = state?.currentHomeId ?? null;
   const currentHome = state?.currentHome ?? null;
+  const previousHomes = homes.filter((home) => home.id !== currentHomeId);
 
   useEffect(() => {
     const onFocus = () => {
@@ -258,6 +275,8 @@ export default function DashboardPage() {
             </div>
           </section>
         </section>
+
+        <PreviousHomesSection homes={previousHomes} />
       </div>
     );
   }
@@ -304,7 +323,7 @@ export default function DashboardPage() {
       ))}
       </section>
 
-      <PreviousHomesSection />
+      <PreviousHomesSection homes={previousHomes} />
     </div>
   );
 }
