@@ -12,6 +12,7 @@ import {
 import {
   DashboardStateError,
   getDashboardState,
+  reconcileDashboardHome,
   type DashboardState,
 } from "@/lib/dashboard/dashboardOrchestrator";
 import type { Home } from "@/lib/home/homeMapper";
@@ -89,9 +90,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const currentHomeId = await getCachedCurrentHomeId(userId);
+      const pointerHomeId = await getCachedCurrentHomeId(userId);
       const homes = homesCacheRef.current;
-      const currentHome = homes.find((h) => h.id === currentHomeId) ?? null;
+      const { currentHomeId, currentHome } = await reconcileDashboardHome(
+        userId,
+        homes,
+        pointerHomeId
+      );
 
       setState({
         userId,

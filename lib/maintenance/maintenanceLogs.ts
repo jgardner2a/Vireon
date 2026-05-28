@@ -202,7 +202,11 @@ export async function deleteMaintenanceLog(
     };
   }
 
-  await cleanupAttachmentsAfterLogDelete("maintenance", attachments);
+  await cleanupAttachmentsAfterLogDelete("maintenance", attachments, {
+    userId,
+    ownerType: "maintenance",
+    ownerId: logId,
+  });
 
   invalidateDashboardSnapshot(userId);
   return { ok: true };

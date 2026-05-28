@@ -1,7 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
+import {
+  DOCUMENT_SECTIONS,
+  DOCUMENT_TYPES,
+  type DocumentType,
+} from "@/lib/documents/documentConfig";
+import {
+  fetchDocumentsForHome,
+  uploadHomeDocument,
+} from "@/lib/documents/documents";
+import type { HomeDocument } from "@/lib/documents/types";
 import {
   createAndActivateHome,
   switchActiveHome,
@@ -40,45 +50,6 @@ const MY_HOME_SPLIT_PANEL = {
   flexDirection: "column",
 } as const;
 
-const DOCUMENT_CATEGORY_SECTIONS = [
-  {
-    title: "Lease Agreement",
-    subtitle: "Primary lease document used for residency verification.",
-  },
-  {
-    title: "Lease Addendums",
-    subtitle: "Supplemental lease terms, amendments, and special clauses.",
-  },
-  {
-    title: "Move-In Inspection",
-    subtitle: "Condition report completed at the start of tenancy.",
-  },
-  {
-    title: "Move-Out Inspection",
-    subtitle: "Final condition report completed before move-out.",
-  },
-  {
-    title: "Renters Insurance",
-    subtitle: "Proof of active renters insurance coverage.",
-  },
-  {
-    title: "HOA / Community Rules",
-    subtitle: "Building or community rules and policy documents.",
-  },
-  {
-    title: "Parking Agreement",
-    subtitle: "Assigned parking terms, permits, and garage details.",
-  },
-  {
-    title: "Pet Agreement",
-    subtitle: "Pet policies, approvals, and related lease documentation.",
-  },
-  {
-    title: "Other Documents",
-    subtitle: "Additional records that do not fit predefined categories.",
-  },
-] as const;
-
 const MY_HOME_HEADER_LEFT_PANEL = {
   width: "calc(100% - clamp(280px, 37.5%, 36rem))",
   display: "flex",
@@ -94,6 +65,73 @@ function HomeCardContent({ home }: { home: Home }) {
       <p className="my-home-home-name">{home.name}</p>
       <p className="my-home-home-address">{home.address}</p>
     </>
+  );
+}
+
+function isDocumentImage(fileName: string): boolean {
+  return /\.(png|jpe?g|webp)$/i.test(fileName);
+}
+
+function isDocumentPdf(fileName: string): boolean {
+  return /\.pdf$/i.test(fileName);
+}
+
+function DocumentThumbnail({ doc }: { doc: HomeDocument }) {
+  const thumbStyle = {
+    width: 48,
+    height: 48,
+    flexShrink: 0,
+    borderRadius: 6,
+    border: "1px solid #ddd",
+  } as const;
+
+  if (isDocumentImage(doc.file_name) && doc.viewUrl) {
+    return (
+      <img
+        src={doc.viewUrl}
+        alt=""
+        style={{
+          ...thumbStyle,
+          objectFit: "cover",
+        }}
+      />
+    );
+  }
+
+  if (isDocumentPdf(doc.file_name)) {
+    return (
+      <div
+        style={{
+          ...thumbStyle,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#f9fafb",
+          fontSize: 11,
+          fontWeight: 600,
+          color: "#555",
+        }}
+      >
+        PDF
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        ...thumbStyle,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#f9fafb",
+        fontSize: 11,
+        fontWeight: 600,
+        color: "#555",
+      }}
+    >
+      DOC
+    </div>
   );
 }
 
@@ -199,12 +237,19 @@ export default function MyHomePage() {
   const [saving, setSaving] = useState(false);
   const [switchingHomeId, setSwitchingHomeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDocument] = useState<{
-    id: string;
-    title: string;
-    type: string;
+  const [documents, setDocuments] = useState<HomeDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
+  const [confirmReplaceDoc, setConfirmReplaceDoc] = useState<{
+    type: DocumentType;
+    doc: HomeDocument;
   } | null>(null);
-  const [sidebarMode] = useState<"view" | "edit">("view");
+  const documentInputRefs = useRef(
+    Object.fromEntries(DOCUMENT_TYPES.map((type) => [type, null])) as Record<
+      DocumentType,
+      HTMLInputElement | null
+    >
+  );
 
   const homes = state?.homes ?? [];
   const currentHomeId = state?.currentHomeId ?? null;
@@ -212,7 +257,71 @@ export default function MyHomePage() {
   const previousHomes = homes.filter((home) => home.id !== currentHomeId);
   const addPropertyLabel = homes.length === 0 ? "Add Property" : "Change Property";
   const displayError = error ?? dashboardError;
-  const documents: Array<{ id: string; title: string; type: string }> = [];
+
+  const loadDocuments = useCallback(async () => {
+    if (!currentHomeId) {
+      setDocuments([]);
+      setDocumentsLoading(false);
+      return;
+    }
+
+    setDocumentsLoading(true);
+    const result = await fetchDocumentsForHome(currentHomeId);
+
+    if (!result.ok) {
+      setError(result.message);
+      setDocuments([]);
+      setDocumentsLoading(false);
+      return;
+    }
+
+    setDocuments(result.documents);
+    setDocumentsLoading(false);
+  }, [currentHomeId]);
+
+  useEffect(() => {
+    void loadDocuments();
+  }, [loadDocuments]);
+
+  const handleDocumentFileChange = async (
+    type: DocumentType,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+
+    if (!file || !currentHomeId) {
+      return;
+    }
+
+    setUploadingType(type);
+    setError(null);
+
+    const result = await uploadHomeDocument({
+      homeId: currentHomeId,
+      type,
+      file,
+    });
+
+    if (!result.ok) {
+      setUploadingType(null);
+      setError(result.message);
+      return;
+    }
+
+    await loadDocuments();
+    setUploadingType(null);
+  };
+
+  const handleConfirmReplaceDocument = () => {
+    if (!confirmReplaceDoc) {
+      return;
+    }
+
+    const type = confirmReplaceDoc.type;
+    setConfirmReplaceDoc(null);
+    documentInputRefs.current[type]?.click();
+  };
 
   const handleCreateHome = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,7 +403,7 @@ export default function MyHomePage() {
               style={{ ...MY_HOME_SPLIT_PANEL, flex: "0 0 auto", marginBottom: 100 }}
             >
               <h2 id="current-home-heading" className="my-home-section-title">
-                Current Property
+                Current
               </h2>
               <div
                 className="my-home-card"
@@ -313,7 +422,7 @@ export default function MyHomePage() {
               style={{ ...MY_HOME_SPLIT_PANEL, flex: "0 0 auto", marginBottom: 100 }}
             >
               <h2 id="no-home-heading" className="my-home-section-title">
-                Current Property
+                Current
               </h2>
               <div className="my-home-card">
                 <p className="my-home-empty" style={{ margin: 0 }}>
@@ -363,61 +472,206 @@ export default function MyHomePage() {
           style={MY_HOME_SPLIT_COLUMN}
         >
           <div className="dashboard-detail-panel" style={MY_HOME_SPLIT_PANEL}>
-            <div className="my-home-topbar" style={{ marginBottom: 12 }}>
-              <h2 className="my-home-section-title" style={{ margin: 0 }}>
-                Documents
-              </h2>
-              <button
-                type="button"
-                className="dashboard-btn-primary"
-                disabled
-                aria-disabled="true"
-              >
-                Add Document
-              </button>
-            </div>
+            <h2 className="my-home-section-title" style={{ margin: "0 0 12px" }}>
+              Current Property Documents
+            </h2>
 
-            <p className="dashboard-detail-panel__empty" style={{ padding: "0 0 12px" }}>
-              No document selected.
-            </p>
-            <p className="dashboard-detail-panel__body-text" style={{ marginBottom: 16 }}>
-              Organize property records by category. Upload and management actions
-              will be added in a future step.
-            </p>
-            <p className="dashboard-detail-panel__body-text" style={{ marginBottom: 16 }}>
-              {sidebarMode === "view" && !selectedDocument
-                ? `${documents.length} documents in this workspace.`
-                : "Document details view placeholder."}
-            </p>
+            {!currentHomeId ? (
+              <p className="my-home-empty" style={{ margin: 0 }}>
+                Select an active property to manage documents.
+              </p>
+            ) : documentsLoading ? (
+              <p className="my-home-empty" style={{ margin: "0 0 16px" }}>
+                Loading documents…
+              </p>
+            ) : null}
 
             <div style={{ display: "grid", gap: 12 }}>
-              {DOCUMENT_CATEGORY_SECTIONS.map((section) => (
-                <section
-                  key={section.title}
-                  className="my-home-card"
-                  style={{ margin: 0, padding: 12, borderColor: "#ececec" }}
-                >
-                  <h3
-                    className="dashboard-detail-panel__section-title"
-                    style={{ marginBottom: 6 }}
+              {DOCUMENT_SECTIONS.map((section) => {
+                const doc = documents.find((row) => row.type === section.type);
+                const hasDocument = !!doc;
+                const uploading = uploadingType === section.type;
+                const inputId = `document-upload-${section.type}`;
+
+                return (
+                  <section
+                    key={section.type}
+                    className="my-home-card"
+                    style={{ margin: 0, padding: 12, borderColor: "#ececec" }}
                   >
-                    {section.title}
-                  </h3>
-                  <p
-                    className="dashboard-detail-panel__body-text"
-                    style={{ marginBottom: 8, color: "#555" }}
-                  >
-                    {section.subtitle}
-                  </p>
-                  <p className="my-home-empty" style={{ margin: 0 }}>
-                    No document uploaded
-                  </p>
-                </section>
-              ))}
+                    <h3
+                      className="dashboard-detail-panel__section-title"
+                      style={{ marginBottom: 6 }}
+                    >
+                      {section.title}
+                    </h3>
+                    <p
+                      className="dashboard-detail-panel__body-text"
+                      style={{ marginBottom: 8, color: "#555" }}
+                    >
+                      {section.subtitle}
+                    </p>
+
+                    <input
+                      ref={(node) => {
+                        documentInputRefs.current[section.type] = node;
+                      }}
+                      id={inputId}
+                      type="file"
+                      style={{ display: "none" }}
+                      disabled={!currentHomeId || uploading}
+                      onChange={(e) => void handleDocumentFileChange(section.type, e)}
+                    />
+
+                    {hasDocument ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                          marginBottom: 10,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <DocumentThumbnail doc={doc} />
+                          <p
+                            className="dashboard-detail-panel__body-text"
+                            style={{
+                              margin: 0,
+                              wordBreak: "break-word",
+                              flex: 1,
+                              minWidth: 0,
+                            }}
+                          >
+                            {doc.file_name}
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                            gap: 8,
+                            paddingLeft: 58,
+                          }}
+                        >
+                          {doc.viewUrl ? (
+                            <a
+                              href={doc.viewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="my-home-btn-secondary"
+                              style={{
+                                display: "inline-block",
+                                textDecoration: "none",
+                                padding: "6px 10px",
+                                fontSize: 13,
+                              }}
+                            >
+                              View
+                            </a>
+                          ) : (
+                            <span
+                              className="my-home-btn-secondary"
+                              style={{
+                                display: "inline-block",
+                                padding: "6px 10px",
+                                fontSize: 13,
+                                opacity: 0.6,
+                              }}
+                              title="Could not load document link. Try refreshing."
+                            >
+                              View unavailable
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="my-home-btn-secondary"
+                            disabled={
+                              !currentHomeId || uploading || documentsLoading
+                            }
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: 13,
+                            }}
+                            onClick={() => setConfirmReplaceDoc({ type: section.type, doc })}
+                          >
+                            {uploading ? "Uploading…" : "Replace Document"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="my-home-empty" style={{ margin: "0 0 10px" }}>
+                          No document uploaded
+                        </p>
+                        <button
+                          type="button"
+                          className="my-home-btn-secondary"
+                          disabled={
+                            !currentHomeId || uploading || documentsLoading
+                          }
+                          onClick={() =>
+                            documentInputRefs.current[section.type]?.click()
+                          }
+                        >
+                          {uploading ? "Uploading…" : "Upload Document"}
+                        </button>
+                      </>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           </div>
         </aside>
       </div>
+
+      {confirmReplaceDoc ? (
+        <div
+          className="my-home-modal-backdrop"
+          role="presentation"
+          onClick={() => setConfirmReplaceDoc(null)}
+        >
+          <div
+            className="my-home-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="replace-document-title"
+            aria-describedby="replace-document-desc"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="replace-document-title" className="my-home-modal-title">
+              Replace Document
+            </h2>
+            <p id="replace-document-desc" className="dashboard-detail-panel__body-text">
+              Are you sure you want to replace this document?
+            </p>
+            <div className="my-home-modal-actions">
+              <button
+                type="button"
+                className="my-home-btn-secondary"
+                onClick={() => setConfirmReplaceDoc(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="my-home-btn-primary"
+                onClick={handleConfirmReplaceDocument}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showAddHomeModal ? (
         <div

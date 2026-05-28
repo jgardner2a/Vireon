@@ -237,6 +237,8 @@ export default function DashboardPage() {
   }
 
   if (!currentHome) {
+    const hasHomes = homes.length > 0;
+
     return (
       <div className="dashboard-container">
         <section id="my-home">
@@ -260,8 +262,9 @@ export default function DashboardPage() {
             </h2>
             <div className="my-home-card">
               <p className="my-home-empty" style={{ margin: 0 }}>
-                No active property. Open My Home to add and manage your property
-                workspace.
+                {hasHomes
+                  ? "No active property is selected, or your saved property is no longer available. Open My Home and choose a property to continue."
+                  : "No active property. Open My Home to add and manage your property workspace."}
               </p>
               <p style={{ margin: "12px 0 0" }}>
                 <Link
@@ -276,7 +279,7 @@ export default function DashboardPage() {
           </section>
         </section>
 
-        <PreviousHomesSection homes={previousHomes} />
+        {hasHomes ? <PreviousHomesSection homes={homes} /> : null}
       </div>
     );
   }

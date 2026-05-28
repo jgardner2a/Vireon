@@ -12,7 +12,8 @@ export default function HomePage() {
             Sign in to continue
           </h1>
           <p className="vireon-home-hero__lead">
-            Authentication and a minimal workspace shell — nothing else.
+            Manage your property workspace — maintenance, notes, photos, and
+            documents in one place.
           </p>
           <div className="vireon-home-cta-row">
             <Link

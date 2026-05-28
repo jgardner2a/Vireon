@@ -337,7 +337,11 @@ export async function deleteCommunication(
     };
   }
 
-  await cleanupAttachmentsAfterLogDelete("communication", attachments);
+  await cleanupAttachmentsAfterLogDelete("communication", attachments, {
+    userId: queryUserId,
+    ownerType: "communication",
+    ownerId: id,
+  });
 
   return { ok: true };
 }

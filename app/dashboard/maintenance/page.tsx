@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import { formatLogDate, previewDescription } from "@/lib/maintenance/format";
@@ -302,12 +303,13 @@ export default function MaintenancePage() {
       return;
     }
 
-    const images = picked.filter((file) => file.type.startsWith("image/"));
-    if (images.length === 0) {
+    const imageCheck = assertEvidenceLogImageFilesOnly(picked);
+    if (!imageCheck.ok) {
+      setError(imageCheck.message);
       return;
     }
 
-    setPendingAttachmentFiles((prev) => [...prev, ...images]);
+    setPendingAttachmentFiles((prev) => [...prev, ...imageCheck.files]);
   };
 
   const uploadPendingAttachments = async (

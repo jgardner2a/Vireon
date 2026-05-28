@@ -1,3 +1,4 @@
+import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
 import { uploadFilesToGallery } from "@/lib/gallery/uploadStorageFiles";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -23,16 +24,6 @@ type AttachmentRow = {
   file_type: string;
   mime_type: string | null;
 };
-
-function deriveAttachmentFileType(mimeType: string): "image" | "pdf" | "other" {
-  if (mimeType.startsWith("image/")) {
-    return "image";
-  }
-  if (mimeType === "application/pdf") {
-    return "pdf";
-  }
-  return "other";
-}
 
 export async function fetchNoteAttachments(
   userId: string,
@@ -81,10 +72,12 @@ export async function uploadNoteAttachments(
 ): Promise<
   { ok: true; storagePaths: string[] } | { ok: false; message: string }
 > {
-  const imageFiles = input.files.filter((file) =>
-    file.type.startsWith("image/")
-  );
+  const imageCheck = assertEvidenceLogImageFilesOnly(input.files);
+  if (!imageCheck.ok) {
+    return imageCheck;
+  }
 
+  const imageFiles = imageCheck.files;
   if (imageFiles.length === 0) {
     return { ok: true, storagePaths: [] };
   }
@@ -112,7 +105,7 @@ export async function uploadNoteAttachments(
       home_id: input.homeId,
       owner_type: "note",
       owner_id: input.noteId,
-      file_type: deriveAttachmentFileType(mimeType),
+      file_type: "image",
       file_name: file.name,
       storage_path: path,
       mime_type: mimeType,

@@ -158,7 +158,11 @@ export async function deleteNote(
     };
   }
 
-  await cleanupAttachmentsAfterLogDelete("note", attachments);
+  await cleanupAttachmentsAfterLogDelete("note", attachments, {
+    userId,
+    ownerType: "note",
+    ownerId: noteId,
+  });
 
   return { ok: true };
 }

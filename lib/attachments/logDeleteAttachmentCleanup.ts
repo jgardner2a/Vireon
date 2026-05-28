@@ -1,3 +1,4 @@
+import { deleteGalleryItem } from "@/lib/gallery/deleteGalleryItem";
 import { STORAGE_BUCKET } from "@/lib/storagePath";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -5,6 +6,50 @@ export type LogDeleteAttachmentRow = {
   id: string;
   storage_path: string;
 };
+
+export type LogDeleteOwner = {
+  userId: string;
+  ownerType: string;
+  ownerId: string;
+};
+
+async function deleteGalleryRowsForLogOwner(
+  logLabel: string,
+  owner: LogDeleteOwner
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("gallery")
+    .select("id, storage_path, home_id")
+    .eq("user_id", owner.userId)
+    .eq("owner_type", owner.ownerType)
+    .eq("owner_id", owner.ownerId);
+
+  if (error) {
+    console.error(`[${logLabel}] delete fetch gallery rows`, error);
+    return;
+  }
+
+  for (const row of data ?? []) {
+    const galleryId = String((row as { id: string }).id);
+    const filePath = String((row as { storage_path: string }).storage_path ?? "");
+    const homeId = String((row as { home_id: string }).home_id ?? "");
+
+    if (!filePath || !homeId) {
+      continue;
+    }
+
+    const result = await deleteGalleryItem({
+      galleryId,
+      filePath,
+      userId: owner.userId,
+      homeId,
+    });
+
+    if (!result.ok) {
+      console.error(`[${logLabel}] delete gallery row`, result.message);
+    }
+  }
+}
 
 async function tryRemoveStorageObject(
   storagePath: string,
@@ -25,13 +70,16 @@ async function tryRemoveStorageObject(
 }
 
 /**
- * Steps 3–4 after the parent log row is deleted: remove attachment rows, then
- * storage objects when no attachments reference the path.
+ * After the parent log row is deleted: remove linked gallery rows, attachment
+ * rows, then storage objects when no attachments reference the path.
  */
 export async function cleanupAttachmentsAfterLogDelete(
   logLabel: string,
-  attachments: LogDeleteAttachmentRow[]
+  attachments: LogDeleteAttachmentRow[],
+  owner: LogDeleteOwner
 ): Promise<void> {
+  await deleteGalleryRowsForLogOwner(logLabel, owner);
+
   for (const attachment of attachments) {
     const { error: deleteAttachmentError } = await supabase
       .from("attachments")
