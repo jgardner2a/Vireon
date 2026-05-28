@@ -15,16 +15,19 @@ import { supabase } from "./supabaseClient";
 
 export type { Home } from "@/lib/home/homeMapper";
 
+type StorageListEntry = { id: string | null; name: string };
+
 async function listAllStorageObjects(
   userId: string,
   homeId: string
-): Promise<{ data: { name: string }[] | null; error: Error | null }> {
+): Promise<{ data: StorageListEntry[] | null; error: unknown }> {
   const prefix = storagePath(userId, homeId);
   const limit = 100;
   let offset = 0;
-  const all: { name: string }[] = [];
+  const all: StorageListEntry[] = [];
+  const maxPages = 1000;
 
-  while (true) {
+  for (let pageIndex = 0; pageIndex < maxPages; pageIndex += 1) {
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .list(prefix, { limit, offset });
@@ -34,11 +37,17 @@ async function listAllStorageObjects(
     }
 
     const page = data ?? [];
-    all.push(...page);
+    for (const item of page) {
+      if (item.id != null) {
+        all.push({ id: item.id, name: item.name });
+      }
+    }
+
     if (page.length < limit) {
       break;
     }
-    offset += limit;
+
+    offset += page.length;
   }
 
   return { data: all, error: null };

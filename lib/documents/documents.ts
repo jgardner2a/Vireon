@@ -18,6 +18,8 @@ type DocumentRow = {
 };
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
+/** Unused at runtime; satisfies NOT NULL `file_url` when the column still exists. */
+const DOCUMENT_FILE_URL_PLACEHOLDER = "";
 
 async function signedUrlForStoragePath(
   storagePath: string
@@ -146,7 +148,7 @@ export async function fetchDocumentsForHome(
   }
 
   const mapped = await Promise.all(
-    (data ?? []).map((row) => mapRow(row as DocumentRow))
+    (data ?? []).map((row) => mapRow(row))
   );
   const documents = mapped.filter((row): row is HomeDocument => row !== null);
 
@@ -179,6 +181,12 @@ export async function uploadHomeDocument(
     };
   }
 
+  const recheck = await deleteDocumentsByHomeAndType(input.homeId, input.type);
+  if (!recheck.ok) {
+    await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath]);
+    return recheck;
+  }
+
   const { data, error: insertError } = await supabase
     .from("documents")
     .insert({
@@ -186,6 +194,7 @@ export async function uploadHomeDocument(
       type: input.type,
       file_name: input.file.name,
       storage_path: storagePath,
+      file_url: DOCUMENT_FILE_URL_PLACEHOLDER,
     })
     .select("id, home_id, type, file_name, storage_path, created_at")
     .single();
@@ -199,8 +208,10 @@ export async function uploadHomeDocument(
     };
   }
 
-  const document = await mapRow(data as DocumentRow);
+  const document = await mapRow(data);
   if (!document) {
+    await supabase.from("documents").delete().eq("id", data.id);
+    await supabase.storage.from(DOCUMENTS_BUCKET).remove([storagePath]);
     return { ok: false, message: "Could not save document record." };
   }
 

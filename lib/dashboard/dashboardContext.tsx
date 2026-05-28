@@ -18,6 +18,7 @@ import type { Home } from "@/lib/home/homeMapper";
 import {
   getCachedCurrentHomeId,
   getCachedUserId,
+  invalidateHomeCache,
 } from "@/lib/sessionCache";
 import { useAuthSession } from "@/lib/useAuthSession";
 
@@ -91,10 +92,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
       const cachedHomeId = await getCachedCurrentHomeId(userId);
       const homes = homesCacheRef.current;
-      const currentHomeId =
-        cachedHomeId && homes.some((h) => h.id === cachedHomeId)
-          ? cachedHomeId
-          : null;
+      const homeIdValid =
+        cachedHomeId != null && homes.some((h) => h.id === cachedHomeId);
+      if (cachedHomeId && !homeIdValid) {
+        invalidateHomeCache();
+      }
+      const currentHomeId = homeIdValid ? cachedHomeId : null;
       const currentHome = currentHomeId
         ? (homes.find((h) => h.id === currentHomeId) ?? null)
         : null;

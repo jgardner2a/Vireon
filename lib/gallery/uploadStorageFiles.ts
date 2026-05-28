@@ -10,6 +10,7 @@ import {
 } from "@/lib/gallery/types";
 import { safeGalleryFileName } from "@/lib/gallery/safeFileName";
 import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
+import { invalidateDashboardSnapshot } from "@/lib/dashboard/dashboardSnapshotCache";
 import { invalidateStorageCache } from "@/lib/storageCache";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -167,6 +168,7 @@ export async function uploadFilesToGallery(
   }
 
   invalidateStorageCache(input.userId, input.homeId);
+  invalidateDashboardSnapshot(input.userId, input.homeId);
 
   return { ok: true, storagePaths };
 }

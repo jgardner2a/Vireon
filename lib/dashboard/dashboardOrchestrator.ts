@@ -1,6 +1,7 @@
 import {
   getCachedCurrentHomeId,
   getCachedUserId,
+  invalidateHomeCache,
 } from "@/lib/sessionCache";
 import { mapHomeRow, type Home, type HomeRow } from "@/lib/home/homeMapper";
 import { supabase } from "@/lib/supabaseClient";
@@ -48,6 +49,10 @@ export async function getDashboardState(): Promise<DashboardState | null> {
   const currentHome = resolvedHomeId
     ? (homes.find((h) => h.id === resolvedHomeId) ?? null)
     : null;
+
+  if (currentHomeId && !resolvedHomeId) {
+    invalidateHomeCache();
+  }
 
   return {
     userId,
