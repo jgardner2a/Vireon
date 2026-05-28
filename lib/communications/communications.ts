@@ -1,4 +1,5 @@
 import { cleanupAttachmentsAfterLogDelete } from "@/lib/attachments/logDeleteAttachmentCleanup";
+import { invalidateDashboardSnapshot } from "@/lib/dashboard/dashboardSnapshotCache";
 import {
   DEFAULT_COMMUNICATION_CATEGORY,
   normalizeCommunicationCategory,
@@ -193,7 +194,9 @@ export async function createCommunication(
     };
   }
 
-  return { ok: true, communication: mapRow(data as CommunicationRow) };
+  const communication = mapRow(data as CommunicationRow);
+  invalidateDashboardSnapshot(communication.user_id, communication.home_id);
+  return { ok: true, communication };
 }
 
 export async function updateCommunication(
@@ -302,6 +305,13 @@ export async function deleteCommunication(
 
   const queryUserId = auth.userId;
 
+  const { data: communicationRow } = await supabase
+    .from("apartment_communications")
+    .select("home_id")
+    .eq("id", id)
+    .eq("user_id", queryUserId)
+    .maybeSingle();
+
   const { data: attachmentRows, error: fetchAttachmentsError } = await supabase
     .from("attachments")
     .select("id, storage_path")
@@ -338,6 +348,12 @@ export async function deleteCommunication(
   }
 
   await cleanupAttachmentsAfterLogDelete("communication", attachments);
+
+  const homeId =
+    communicationRow && typeof communicationRow.home_id === "string"
+      ? communicationRow.home_id
+      : undefined;
+  invalidateDashboardSnapshot(queryUserId, homeId);
 
   return { ok: true };
 }

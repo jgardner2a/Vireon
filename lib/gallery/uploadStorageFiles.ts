@@ -97,6 +97,37 @@ export async function uploadFilesToGallery(
 
   const storagePaths: string[] = [];
 
+  async function rollbackCommittedUploads(paths: string[]): Promise<void> {
+    if (paths.length === 0) {
+      return;
+    }
+
+    const { error: galleryDeleteError } = await supabase
+      .from("gallery")
+      .delete()
+      .eq("user_id", input.userId)
+      .eq("home_id", input.homeId)
+      .in("storage_path", paths);
+
+    if (galleryDeleteError) {
+      console.error(
+        `[${input.logContext}] rollback gallery rows`,
+        galleryDeleteError
+      );
+    }
+
+    const { error: storageRemoveError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .remove(paths);
+
+    if (storageRemoveError) {
+      console.error(
+        `[${input.logContext}] rollback storage`,
+        storageRemoveError
+      );
+    }
+  }
+
   for (const file of imageFiles) {
     const fileName = safeGalleryFileName(file.name);
     const path = storagePath(input.userId, input.homeId, fileName);
@@ -110,6 +141,7 @@ export async function uploadFilesToGallery(
 
     if (uploadError) {
       console.error(`[${input.logContext}] storage upload`, uploadError);
+      await rollbackCommittedUploads(storagePaths);
       return {
         ok: false,
         message: uploadError.message || "Could not upload image.",
@@ -123,6 +155,8 @@ export async function uploadFilesToGallery(
 
     if (insertError) {
       console.error(`[${input.logContext}] gallery insert`, insertError);
+      await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+      await rollbackCommittedUploads(storagePaths);
       return {
         ok: false,
         message: insertError.message || "Could not save gallery record.",

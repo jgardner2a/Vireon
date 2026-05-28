@@ -1,4 +1,5 @@
 import { cleanupAttachmentsAfterLogDelete } from "@/lib/attachments/logDeleteAttachmentCleanup";
+import { invalidateDashboardSnapshot } from "@/lib/dashboard/dashboardSnapshotCache";
 import {
   DEFAULT_NOTE_CATEGORY,
   normalizeCategory,
@@ -89,7 +90,9 @@ export async function createNote(
     };
   }
 
-  return { ok: true, note: mapRow(data as NoteRow) };
+  const note = mapRow(data as NoteRow);
+  invalidateDashboardSnapshot(note.user_id, note.home_id);
+  return { ok: true, note };
 }
 
 export async function updateNote(
@@ -128,6 +131,13 @@ export async function deleteNote(
   noteId: string,
   userId: string
 ): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data: noteRow } = await supabase
+    .from("notes")
+    .select("home_id")
+    .eq("id", noteId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
   const { data: attachmentRows, error: fetchAttachmentsError } = await supabase
     .from("attachments")
     .select("id, storage_path")
@@ -159,6 +169,12 @@ export async function deleteNote(
   }
 
   await cleanupAttachmentsAfterLogDelete("note", attachments);
+
+  const homeId =
+    noteRow && typeof noteRow.home_id === "string"
+      ? noteRow.home_id
+      : undefined;
+  invalidateDashboardSnapshot(userId, homeId);
 
   return { ok: true };
 }

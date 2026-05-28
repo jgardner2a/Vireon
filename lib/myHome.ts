@@ -15,6 +15,35 @@ import { supabase } from "./supabaseClient";
 
 export type { Home } from "@/lib/home/homeMapper";
 
+async function listAllStorageObjects(
+  userId: string,
+  homeId: string
+): Promise<{ data: { name: string }[] | null; error: Error | null }> {
+  const prefix = storagePath(userId, homeId);
+  const limit = 100;
+  let offset = 0;
+  const all: { name: string }[] = [];
+
+  while (true) {
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .list(prefix, { limit, offset });
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    const page = data ?? [];
+    all.push(...page);
+    if (page.length < limit) {
+      break;
+    }
+    offset += limit;
+  }
+
+  return { data: all, error: null };
+}
+
 /** Home-scoped gallery count for My Home summary (not used by Gallery page). */
 export async function getGalleryFileCount(
   userId: string,
@@ -24,10 +53,7 @@ export async function getGalleryFileCount(
     userId,
     homeId,
     "summary",
-    () =>
-      supabase.storage
-        .from(STORAGE_BUCKET)
-        .list(storagePath(userId, homeId), { limit: 100 })
+    () => listAllStorageObjects(userId, homeId)
   );
 
   if (error) {
@@ -96,6 +122,25 @@ export async function setCurrentHome(
 
   if (!userId) {
     return { ok: false, message: "Not signed in." };
+  }
+
+  const { data: ownedHome, error: homeLookupError } = await supabase
+    .from("homes")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("id", homeId)
+    .maybeSingle();
+
+  if (homeLookupError) {
+    console.error("[myHome] validate home for setCurrentHome", homeLookupError);
+    return {
+      ok: false,
+      message: homeLookupError.message || "Could not verify home.",
+    };
+  }
+
+  if (!ownedHome) {
+    return { ok: false, message: "Invalid home." };
   }
 
   const { error: stateError } = await supabase.from("user_state").upsert(

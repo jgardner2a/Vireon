@@ -41,12 +41,18 @@ export async function getDashboardState(): Promise<DashboardState | null> {
 
   const rows = (homesResult.data ?? []) as HomeRow[];
   const homes = rows.map(mapHomeRow);
-  const currentHome = homes.find((h) => h.id === currentHomeId) ?? null;
+  const resolvedHomeId =
+    currentHomeId && homes.some((h) => h.id === currentHomeId)
+      ? currentHomeId
+      : null;
+  const currentHome = resolvedHomeId
+    ? (homes.find((h) => h.id === resolvedHomeId) ?? null)
+    : null;
 
   return {
     userId,
     homes,
-    currentHomeId,
+    currentHomeId: resolvedHomeId,
     currentHome,
   };
 }

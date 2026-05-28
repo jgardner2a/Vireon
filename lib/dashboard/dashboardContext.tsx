@@ -89,9 +89,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const currentHomeId = await getCachedCurrentHomeId(userId);
+      const cachedHomeId = await getCachedCurrentHomeId(userId);
       const homes = homesCacheRef.current;
-      const currentHome = homes.find((h) => h.id === currentHomeId) ?? null;
+      const currentHomeId =
+        cachedHomeId && homes.some((h) => h.id === cachedHomeId)
+          ? cachedHomeId
+          : null;
+      const currentHome = currentHomeId
+        ? (homes.find((h) => h.id === currentHomeId) ?? null)
+        : null;
 
       setState({
         userId,
