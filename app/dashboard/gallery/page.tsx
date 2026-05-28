@@ -1200,15 +1200,9 @@ export default function GalleryPage() {
           galleryItems
         );
         const filteredEntries =
-          activeSidebarFilter === "evidence" && activeEvidenceRecord !== null
-            ? displayEntries.filter(
-                (entry) =>
-                  entry.ownerType === activeEvidenceRecord.ownerType &&
-                  entry.ownerId === activeEvidenceRecord.ownerId
-              )
-            : activeSidebarFilter === "folder" && activeFolderId !== null
-              ? displayEntries.filter((entry) => entry.folderId === activeFolderId)
-              : displayEntries;
+          activeSidebarFilter === "folder" && activeFolderId !== null
+            ? displayEntries.filter((entry) => entry.folderId === activeFolderId)
+            : displayEntries;
         const filteredPaths = filteredEntries.map((entry) => entry.path);
         const idMap = new Map(
           filteredEntries.map((entry) => [entry.path, entry.galleryId])
