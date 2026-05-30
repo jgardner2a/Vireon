@@ -1,10 +1,15 @@
 /**
- * SINGLE UPLOAD PIPELINE — all file uploads in the app must go through
- * `uploadFilesToGallery()`. Storage upload + gallery insert live here only.
+ * Gallery + evidence-log upload pipeline (`uploadFilesToGallery`).
+ *
+ * Used by: Gallery page, Maintenance, Notes, Communications, Complex.
+ * NOT used by: Snapshots — move-in/move-out media uses `uploadSnapshotImage()`
+ * in lib/snapshots/uploadSnapshotImage.ts (same `uploads` bucket + `gallery` table).
+ *
  * Deletions use `deleteGalleryItem()` in lib/gallery/deleteGalleryItem.ts only.
  */
 import {
   GALLERY_OWNER_TYPE_COMMUNICATION,
+  GALLERY_OWNER_TYPE_COMPLEX,
   GALLERY_OWNER_TYPE_MAINTENANCE,
   GALLERY_OWNER_TYPE_NOTE,
 } from "@/lib/gallery/types";
@@ -17,7 +22,8 @@ export type UploadGalleryContext =
   | "gallery"
   | "maintenance"
   | "note"
-  | "communication";
+  | "communication"
+  | "complex";
 
 export type UploadFilesToGalleryInput = {
   userId: string;
@@ -26,7 +32,7 @@ export type UploadFilesToGalleryInput = {
   logContext: string;
   /** Drives owner_type; use "gallery" for unlinked uploads. */
   context: UploadGalleryContext;
-  /** Record id when context is maintenance, note, or communication. */
+  /** Record id when context is maintenance, note, communication, or complex. */
   ownerId?: string;
   /** Optional folder_id; no folder creation logic here. */
   folderId?: string;
@@ -46,7 +52,9 @@ function resolveOwnerFields(
       ? GALLERY_OWNER_TYPE_MAINTENANCE
       : context === "note"
         ? GALLERY_OWNER_TYPE_NOTE
-        : GALLERY_OWNER_TYPE_COMMUNICATION;
+        : context === "complex"
+          ? GALLERY_OWNER_TYPE_COMPLEX
+          : GALLERY_OWNER_TYPE_COMMUNICATION;
 
   return {
     owner_type,

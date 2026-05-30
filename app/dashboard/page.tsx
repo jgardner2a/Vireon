@@ -50,6 +50,14 @@ const HOME_FEATURES: HomeFeature[] = [
         : null,
   },
   {
+    id: "complex",
+    name: "Complex",
+    getSummary: (context) =>
+      context.metrics?.complexCount
+        ? `${context.metrics.complexCount} Issues`
+        : null,
+  },
+  {
     id: "communications",
     name: "Communications",
     getSummary: (context) =>

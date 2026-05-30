@@ -45,10 +45,11 @@ html {
 .dashboard-brand {
   display: block;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 22px;
   margin-bottom: 24px;
   color: #111;
   text-decoration: none;
+  text-align: center;
 }
 
 .dashboard-brand:hover {
@@ -58,13 +59,13 @@ html {
 .dashboard-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 
 .dashboard-nav-sub {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   margin: 2px 0 0 10px;
   padding-left: 8px;
   border-left: 1px solid #eee;
@@ -73,15 +74,14 @@ html {
 .dashboard-nav-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 
-.dashboard-nav-section-title {
+.dashboard-nav-section-link {
   margin: 0;
   padding: 6px 10px 4px;
   font-size: 13px;
   font-weight: 600;
-  color: #444;
 }
 
 .dashboard-nav-label {
@@ -95,16 +95,24 @@ html {
 .dashboard-nav-link {
   display: block;
   padding: 8px 10px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
   color: #333;
   text-decoration: none;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.dashboard-nav-link:hover {
+  border-color: #9ca3af;
 }
 
 .dashboard-nav-link--active {
   background: #f3f4f6;
   font-weight: 500;
   color: #111;
+  border-color: #9ca3af;
 }
 
 .dashboard-main {
@@ -186,11 +194,22 @@ html {
   scroll-behavior: smooth;
 }
 
+.dashboard-main:has(.gallery-page) {
+  padding-inline: 24px;
+}
+
+.dashboard-container.gallery-page {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+
 .gallery-page-layout {
   display: flex;
   align-items: flex-start;
   gap: 24px;
   margin-top: 8px;
+  width: 100%;
 }
 
 .gallery-page-main {
@@ -730,6 +749,10 @@ html {
     width: 100%;
     max-height: none;
   }
+
+  .gallery-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -737,12 +760,22 @@ html {
     margin-left: 0;
     width: 100%;
   }
+
+  .gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
   margin: 24px 0 0;
   padding: 0;
   list-style: none;
@@ -756,7 +789,7 @@ html {
   border-radius: 8px;
   overflow: hidden;
   background: #fafafa;
-  min-height: 140px;
+  aspect-ratio: 1;
   contain: layout style paint;
   transition: box-shadow 150ms ease, border-color 150ms ease;
 }
@@ -893,9 +926,11 @@ html {
 }
 
 .gallery-grid-img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: 140px;
+  height: 100%;
   object-fit: cover;
   opacity: 0;
   transition: opacity 250ms ease-out;

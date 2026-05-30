@@ -27,8 +27,10 @@
 }
 
 .dashboard-split__list .maintenance-list,
+.dashboard-split__list .complex-list,
 .dashboard-split__list .notes-list,
-.dashboard-split__list .communications-list {
+.dashboard-split__list .communications-list,
+.dashboard-split__list .snapshot-rooms-list {
   margin-top: 0;
 }
 

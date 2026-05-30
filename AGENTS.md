@@ -7,11 +7,11 @@ Next.js property dashboard: Supabase Auth, client-side data access, and a multi-
 - **Auth:** sign up, sign in, sign out (`lib/auth*`, `/login`).
 - **Dashboard:** protected shell with sidebar (`/dashboard/*`), active home from `user_state.current_home_id`.
 - **Data:** browser client uses the Supabase **anon** key + user JWT; **RLS and storage policies in Supabase** enforce tenancy (not app-server middleware).
-- **Modules:** My Home (property + renter documents), Gallery, Maintenance, Notes, Communications; Vault nav is a placeholder.
+- **Modules:** My Home (property + renter documents), Gallery, Maintenance, Notes, Communications, **Snapshots** (move-in/move-out); Vault nav is a placeholder.
 
-### Domain boundaries: Gallery, Evidence logs, Documents
+### Domain boundaries: Gallery, Evidence logs, Documents, Snapshots
 
-These are **three separate systems**. Do not merge tables, buckets, or UI flows.
+Gallery, evidence logs, and documents are separate systems. **Snapshots** share the Gallery **media tables** but own move-in/move-out **creation** — do not merge UI flows or upload pipelines.
 
 #### Gallery (media catalog)
 
@@ -27,6 +27,24 @@ These are **three separate systems**. Do not merge tables, buckets, or UI flows.
 | **Not** | Renter lease/insurance docs; not a substitute for log text/records |
 
 **Gallery-only upload ≠ evidence.** No `attachments` row until user links to a log (`markGalleryAsEvidence`) or uploads from a log module.
+
+**Gallery is the database layer for media; the Gallery page is catalog UI only for snapshots.** Snapshot move-in/move-out uploads do **not** use `uploadFilesToGallery()` or Gallery page upload code.
+
+#### Snapshots (move-in / move-out)
+
+| | |
+|--|--|
+| **Purpose** | Property condition record at move-in or move-out: images + static issue annotations |
+| **Routes** | `/dashboard/home/[homeId]/snapshots`, `/dashboard/snapshots/[snapshotId]` |
+| **Code** | `lib/snapshots/*` only for **creation**; snapshot pages only |
+| **Tables** | `snapshots`, `snapshot_images`, `snapshot_issues`; **`gallery`** (index row per uploaded image) |
+| **Storage** | Same **`uploads`** bucket as Gallery — **no** separate snapshot bucket |
+| **Upload (creation layer)** | **Only** `uploadSnapshotImage()` in `lib/snapshots/uploadSnapshotImage.ts`: storage → inline `gallery` insert → `snapshot_images` link |
+| **Link existing** | `addSnapshotImages(snapshotId, galleryIds)` — references existing `gallery.id`; no upload |
+| **Issues** | `addSnapshotIssue()` — snapshot-scoped only; **not** maintenance logs; no status/workflows |
+| **Not** | `uploadFilesToGallery`, Gallery page upload UI, `attachments`, evidence `owner_type`, separate media schema/bucket |
+
+**Invariant:** `lib/snapshots/**` must **not** import `@/lib/gallery/uploadStorageFiles` or Gallery page modules (enforced in ESLint).
 
 #### Evidence logs (Maintenance, Notes, Communications)
 
@@ -60,12 +78,14 @@ These are **three separate systems**. Do not merge tables, buckets, or UI flows.
 
 ### Cross-domain rules (quick reference)
 
-| Action | Gallery | Evidence logs | Documents |
-|--------|---------|---------------|-----------|
-| New image in `uploads` for catalog | Yes | Via log upload | No |
-| New file in `documents` bucket | No | No | Yes |
-| `attachments` row | Only when linked to a log | Yes | Never |
-| Delete log | — | Removes linked gallery rows | — |
+| Action | Gallery | Snapshots | Evidence logs | Documents |
+|--------|---------|-----------|---------------|-----------|
+| New image in `uploads` for catalog | Yes (`uploadFilesToGallery`) | Yes (`uploadSnapshotImage` only) | Via log upload | No |
+| Uses `gallery` table | Yes | Yes (insert in snapshot pipeline) | Yes | No |
+| `snapshot_images` row | No | Yes | No | No |
+| New file in `documents` bucket | No | No | No | Yes |
+| `attachments` row | Only when linked to a log | Never | Yes | Never |
+| Delete log | — | — | Removes linked gallery rows | — |
 
 Active home: read via `getActiveHomeId` / dashboard orchestrator (`reconcileDashboardHome`). User-selected home: write via `setCurrentHome` in `lib/myHome.ts`. Invalid `current_home_id` (not in `homes`): nulled in UI and cleared in `user_state` only via `reconcileDashboardHome` in `lib/dashboard/dashboardOrchestrator.ts`.
 
@@ -87,7 +107,7 @@ Active home: read via `getActiveHomeId` / dashboard orchestrator (`reconcileDash
 - **Supabase migrations, seed SQL, or RLS/policy changes in this repo** — schema and policies live in the Supabase project, not in git here.
 - **Service role key** or any secret in the frontend / committed env files.
 - **New backend** (Route Handlers, Server Actions, or separate API) for data the client already accesses — unless the user requests that architecture.
-- Crossing domain boundaries (see above): documents in Gallery, log files in `documents` bucket, log uploads that skip `gallery`, gallery uploads that auto-create `attachments`, evidence PDFs (**images only**).
+- Crossing domain boundaries (see above): documents in Gallery, log files in `documents` bucket, log uploads that skip `gallery`, gallery uploads that auto-create `attachments`, evidence PDFs (**images only**), snapshot uploads via `uploadFilesToGallery` or Gallery page code, separate snapshot storage buckets/schemas.
 - Large unrelated refactors, drive-by renames, or “simplify to auth-only” (that phase is over).
 - Touching `_legacy/` except to delete when asked.
 
@@ -101,11 +121,12 @@ These are enforced by code patterns; violations cause drift, orphans, or securit
 
 | Bucket | Upload only via | Delete / lifecycle only via |
 |--------|-----------------|-----------------------------|
-| `uploads` | `uploadFilesToGallery()` | `deleteGalleryItem()` (+ log-delete cleanup that calls it) |
+| `uploads` | `uploadFilesToGallery()` (Gallery + evidence logs) **or** `uploadSnapshotImage()` (Snapshots) | `deleteGalleryItem()` (+ log-delete cleanup that calls it) |
 | `documents` | `uploadHomeDocument()` | `deleteDocumentRecordAndStorage()` in `lib/documents/documents.ts` |
 
 - Do **not** call `supabase.storage.from("uploads").remove(...)` from new code except inside approved gallery/document helpers.
-- Do **not** insert into `gallery` outside `uploadFilesToGallery` / copy-move helpers in `lib/gallery/`.
+- Do **not** insert into `gallery` except: `uploadFilesToGallery()`, copy/move helpers in `lib/gallery/`, or **`uploadSnapshotImage()`** (snapshot-owned pipeline; same row shape, no `uploadFilesToGallery` import).
+- Do **not** add a second media bucket or duplicate `gallery` schema for snapshots.
 
 ### Active home (`user_state`)
 

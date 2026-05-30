@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 export const GALLERY_OWNER_TYPE_MAINTENANCE = "maintenance";
 export const GALLERY_OWNER_TYPE_NOTE = "note";
 export const GALLERY_OWNER_TYPE_COMMUNICATION = "communication";
+export const GALLERY_OWNER_TYPE_COMPLEX = "complex";
 
 export type GalleryGroupRow = {
   storage_path: string;
@@ -113,6 +114,31 @@ async function fetchCommunicationTitles(
   return map;
 }
 
+async function fetchComplexTitles(
+  userId: string,
+  ids: string[]
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (ids.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("complex_issues")
+    .select("id, title")
+    .eq("user_id", userId)
+    .in("id", ids);
+
+  if (error) {
+    console.error("[gallery] complex labels", error);
+    return map;
+  }
+
+  for (const row of data ?? []) {
+    const r = row as { id: string; title: string };
+    map.set(r.id, r.title?.trim() || "Untitled");
+  }
+  return map;
+}
+
 export async function fetchGalleryGroupIndex(
   userId: string,
   homeId: string
@@ -161,24 +187,28 @@ export async function buildGalleryGroupSections(
   }
 
   const maintenanceIds = [...(byType.get(GALLERY_OWNER_TYPE_MAINTENANCE) ?? [])];
+  const complexIds = [...(byType.get(GALLERY_OWNER_TYPE_COMPLEX) ?? [])];
   const noteIds = [...(byType.get(GALLERY_OWNER_TYPE_NOTE) ?? [])];
   const communicationIds = [...(byType.get(GALLERY_OWNER_TYPE_COMMUNICATION) ?? [])];
 
-  const [maintenanceLabels, noteLabels, communicationLabels] =
+  const [maintenanceLabels, complexLabels, noteLabels, communicationLabels] =
     await Promise.all([
       fetchMaintenanceTitles(userId, maintenanceIds),
+      fetchComplexTitles(userId, complexIds),
       fetchNoteTitles(userId, noteIds),
       fetchCommunicationTitles(userId, communicationIds),
     ]);
 
   const sectionDefs = [
     { ownerType: GALLERY_OWNER_TYPE_MAINTENANCE, title: "Maintenance" },
+    { ownerType: GALLERY_OWNER_TYPE_COMPLEX, title: "Complex" },
     { ownerType: GALLERY_OWNER_TYPE_NOTE, title: "Notes" },
     { ownerType: GALLERY_OWNER_TYPE_COMMUNICATION, title: "Communications" },
   ];
 
   const labelMaps = new Map<string, Map<string, string>>([
     [GALLERY_OWNER_TYPE_MAINTENANCE, maintenanceLabels],
+    [GALLERY_OWNER_TYPE_COMPLEX, complexLabels],
     [GALLERY_OWNER_TYPE_NOTE, noteLabels],
     [GALLERY_OWNER_TYPE_COMMUNICATION, communicationLabels],
   ]);

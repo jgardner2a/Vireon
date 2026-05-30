@@ -25,6 +25,11 @@ import {
   type GallerySelectionItem,
 } from "@/lib/gallery/useGallerySelection";
 import { markGalleryAsEvidence } from "@/lib/gallery/markGalleryAsEvidence";
+import {
+  enrichGalleryEntriesWithSnapshotOwnership,
+  fetchSnapshotGalleryEvidence,
+  SNAPSHOT_EVIDENCE_OWNER_TYPE,
+} from "@/lib/snapshots/galleryEvidence";
 import { uploadFilesToGallery } from "@/lib/gallery/uploadStorageFiles";
 import {
   getCachedStorageList,
@@ -40,8 +45,8 @@ const PAGE_SIZE = 20;
 const MAX_VISIBLE = 60;
 /** Extra items before the current batch in the tail window. */
 const VISIBLE_BUFFER = 20;
-/** Approximate row height for mid-list scroll spacer (img + gap). */
-const GALLERY_ROW_HEIGHT_PX = 152;
+/** Approximate row height for mid-list scroll spacer (square card + gap). */
+const GALLERY_ROW_HEIGHT_PX = 100;
 /** List cap for large galleries; paths are batched client-side. */
 const LIST_LIMIT = 1000;
 /** Stagger delay between thumbnails in the same appended batch. */
@@ -78,13 +83,18 @@ type SignedGalleryFile = {
   url: string;
 };
 
-type EvidenceType = "maintenance" | "communication" | "note";
+type EvidenceType = "maintenance" | "communication" | "note" | "complex" | "snapshot";
 type EvidenceRecordFilter = {
   ownerType: EvidenceType;
   ownerId: string;
 };
 type ActiveSidebarFilter = "folder" | "evidence" | null;
-type UploadGalleryContext = "gallery" | "maintenance" | "note" | "communication";
+type UploadGalleryContext =
+  | "gallery"
+  | "maintenance"
+  | "note"
+  | "communication"
+  | "complex";
 type EvidenceRecordItem = {
   ownerType: EvidenceType;
   ownerId: string;
@@ -100,7 +110,9 @@ function isEvidenceOwnerType(ownerType: string | null): ownerType is EvidenceTyp
   return (
     ownerType === "maintenance" ||
     ownerType === "communication" ||
-    ownerType === "note"
+    ownerType === "note" ||
+    ownerType === "complex" ||
+    ownerType === SNAPSHOT_EVIDENCE_OWNER_TYPE
   );
 }
 
@@ -147,6 +159,21 @@ function buildVisibleGallerySlice(
   return { head, tail, midSpacerPx };
 }
 
+function galleryFileMetadataFromMaps(
+  path: string,
+  galleryIdByPath: Map<string, string | null>,
+  ownerTypeByPath: Map<string, string | null>,
+  ownerIdByPath: Map<string, string | null>,
+  folderIdByPath: Map<string, string | null>
+): Pick<GalleryFile, "galleryId" | "ownerType" | "ownerId" | "folderId"> {
+  return {
+    galleryId: galleryIdByPath.get(path) ?? null,
+    ownerType: ownerTypeByPath.get(path) ?? null,
+    ownerId: ownerIdByPath.get(path) ?? null,
+    folderId: folderIdByPath.get(path) ?? null,
+  };
+}
+
 /** Reuse GalleryFile instances when storage_path + signedUrl are unchanged. */
 function memoizeGalleryFiles(
   cache: Map<string, GalleryFile>,
@@ -166,9 +193,25 @@ function memoizeGalleryFiles(
       continue;
     }
 
+    const metadata = galleryFileMetadataFromMaps(
+      path,
+      galleryIdByPath,
+      ownerTypeByPath,
+      ownerIdByPath,
+      folderIdByPath
+    );
     const existing = cache.get(path);
+
     if (existing && existing.url === row.url) {
-      memoized.push(existing);
+      const merged: GalleryFile =
+        existing.galleryId === metadata.galleryId &&
+        existing.ownerType === metadata.ownerType &&
+        existing.ownerId === metadata.ownerId &&
+        existing.folderId === metadata.folderId
+          ? existing
+          : { ...existing, ...metadata };
+      cache.set(path, merged);
+      memoized.push(merged);
       continue;
     }
 
@@ -176,10 +219,7 @@ function memoizeGalleryFiles(
       path,
       name: row.name,
       url: row.url,
-      galleryId: galleryIdByPath.get(path) ?? null,
-      ownerType: ownerTypeByPath.get(path) ?? null,
-      ownerId: ownerIdByPath.get(path) ?? null,
-      folderId: folderIdByPath.get(path) ?? null,
+      ...metadata,
     };
     cache.set(path, next);
     memoized.push(next);
@@ -221,13 +261,9 @@ function GalleryGridThumbnail({
     }
   }, [file.url, inStaggerBatch]);
 
-  const imgStyle = {
-    width: 100,
-    height: 100,
-    objectFit: "cover" as const,
-    borderRadius: 8,
-    ...(inStaggerBatch ? { animationDelay: `${staggerDelayMs}ms` } : {}),
-  };
+  const imgStyle = inStaggerBatch
+    ? { animationDelay: `${staggerDelayMs}ms` }
+    : undefined;
 
   const image = inStaggerBatch ? (
     <img
@@ -247,7 +283,6 @@ function GalleryGridThumbnail({
       className={
         loaded ? "gallery-grid-img gallery-grid-img--loaded" : "gallery-grid-img"
       }
-      style={imgStyle}
       loading="lazy"
       onLoad={() => setLoaded(true)}
     />
@@ -677,7 +712,7 @@ function GalleryFolderSidebar({
               <div key={section.ownerType} className="gallery-evidence-section">
                 <h4 className="gallery-evidence-section-title">{section.title}</h4>
                 {section.records.length === 0 ? (
-                  <p className="gallery-folder-sidebar-empty">No records</p>
+                  <p className="gallery-folder-sidebar-empty">No images</p>
                 ) : (
                   <ul className="gallery-evidence-record-list">
                     {section.records.map((record) => {
@@ -735,6 +770,9 @@ export default function GalleryPage() {
   const [galleryIdByPath, setGalleryIdByPath] = useState(
     () => new Map<string, string | null>()
   );
+  const [ownerTypeByPath, setOwnerTypeByPath] = useState(
+    () => new Map<string, string | null>()
+  );
   const [error, setError] = useState<string | null>(null);
   const [staggerWindow, setStaggerWindow] = useState<StaggerWindow>({
     start: 0,
@@ -782,6 +820,7 @@ export default function GalleryPage() {
   const ownerTypeByPathRef = useRef<Map<string, string | null>>(new Map());
   const ownerIdByPathRef = useRef<Map<string, string | null>>(new Map());
   const folderIdByPathRef = useRef<Map<string, string | null>>(new Map());
+  const galleryLoadGenerationRef = useRef(0);
   const loadingRef = useRef(loading);
 
   const {
@@ -814,13 +853,13 @@ export default function GalleryPage() {
 
   const ownerTypeByGalleryId = useMemo(() => {
     const map = new Map<string, string | null>();
-    cachedFiles.forEach((file) => {
-      if (file.galleryId) {
-        map.set(file.galleryId, file.ownerType);
+    for (const [path, galleryId] of galleryIdByPath.entries()) {
+      if (galleryId) {
+        map.set(galleryId, ownerTypeByPath.get(path) ?? null);
       }
-    });
+    }
     return map;
-  }, [cachedFiles]);
+  }, [galleryIdByPath, ownerTypeByPath]);
 
   const selectedHasEvidenceItems = useMemo(
     () =>
@@ -879,7 +918,8 @@ export default function GalleryPage() {
       activeSidebarFilter === null ||
       (activeSidebarFilter === "folder" && resolvedActiveFolder !== null) ||
       (activeSidebarFilter === "evidence" &&
-        resolvedActiveEvidenceRecord !== null),
+        resolvedActiveEvidenceRecord !== null &&
+        resolvedActiveEvidenceRecord.ownerType !== SNAPSHOT_EVIDENCE_OWNER_TYPE),
     [activeSidebarFilter, resolvedActiveFolder, resolvedActiveEvidenceRecord]
   );
 
@@ -944,8 +984,13 @@ export default function GalleryPage() {
 
     setEvidenceLoading(true);
 
-    const [maintenanceResult, communicationResult, noteResult] =
-      await Promise.all([
+    const [
+      maintenanceResult,
+      communicationResult,
+      noteResult,
+      complexResult,
+      snapshotEvidenceResult,
+    ] = await Promise.all([
         supabase
           .from("maintenance_logs")
           .select("id, title, description")
@@ -964,7 +1009,14 @@ export default function GalleryPage() {
           .eq("user_id", userId)
           .eq("home_id", homeId)
           .order("created_at", { ascending: false }),
-      ]);
+        supabase
+          .from("complex_issues")
+          .select("id, title, description")
+          .eq("user_id", userId)
+          .eq("home_id", homeId)
+          .order("created_at", { ascending: false }),
+      fetchSnapshotGalleryEvidence(homeId),
+    ]);
 
     const maintenanceRecords: EvidenceRecordItem[] = (
       (maintenanceResult.data as
@@ -1002,8 +1054,35 @@ export default function GalleryPage() {
       label: noteDisplayTitle(row.title, row.content ?? "") || "Untitled note",
     }));
 
+    const complexRecords: EvidenceRecordItem[] = (
+      (complexResult.data as
+        | { id: string; title: string | null; description: string | null }[]
+        | null) ?? []
+    ).map((row) => ({
+      ownerType: "complex",
+      ownerId: row.id,
+      label:
+        row.title?.trim() ||
+        row.description?.trim().slice(0, 40) ||
+        "Untitled complex issue",
+    }));
+
+    const snapshotRecords: EvidenceRecordItem[] = snapshotEvidenceResult.ok
+      ? snapshotEvidenceResult.records.map((record) => ({
+          ownerType: record.ownerType,
+          ownerId: record.ownerId,
+          label: record.label,
+        }))
+      : [];
+
     setEvidenceSections([
+      {
+        ownerType: SNAPSHOT_EVIDENCE_OWNER_TYPE,
+        title: "Snapshots",
+        records: snapshotRecords,
+      },
       { ownerType: "maintenance", title: "Maintenance", records: maintenanceRecords },
+      { ownerType: "complex", title: "Complex", records: complexRecords },
       {
         ownerType: "communication",
         title: "Communications",
@@ -1092,7 +1171,8 @@ export default function GalleryPage() {
       homeId: string,
       paths: string[],
       start: number,
-      append: boolean
+      append: boolean,
+      loadGeneration: number
     ): Promise<number> => {
       const batch = paths.slice(start, start + PAGE_SIZE);
       if (batch.length === 0) {
@@ -1100,6 +1180,10 @@ export default function GalleryPage() {
       }
 
       const signed = await signBatch(userId, homeId, batch);
+      if (loadGeneration !== galleryLoadGenerationRef.current) {
+        return start;
+      }
+
       const memoized = memoizeGalleryFiles(
         fileObjectByPathRef.current,
         batch,
@@ -1112,6 +1196,9 @@ export default function GalleryPage() {
       const end = start + batch.length;
 
       await scheduleGalleryDomUpdate(() => {
+        if (loadGeneration !== galleryLoadGenerationRef.current) {
+          return;
+        }
         setCachedFiles((prev) =>
           append ? [...prev, ...memoized] : memoized
         );
@@ -1131,6 +1218,7 @@ export default function GalleryPage() {
     ownerIdByPathRef.current.clear();
     folderIdByPathRef.current.clear();
     setGalleryIdByPath(new Map());
+    setOwnerTypeByPath(new Map());
     setAllPaths([]);
     setCachedFiles([]);
     setLoadedCount(0);
@@ -1156,6 +1244,8 @@ export default function GalleryPage() {
       return;
     }
 
+    const loadGeneration = ++galleryLoadGenerationRef.current;
+
     const prevScope = scopeRef.current;
     if (prevScope && prevScope.userId !== userId) {
       invalidateSignedUrlCacheForUser(prevScope.userId);
@@ -1171,13 +1261,18 @@ export default function GalleryPage() {
     setLoading(true);
     setError(null);
     fileObjectByPathRef.current.clear();
+    galleryIdByPathRef.current.clear();
     ownerTypeByPathRef.current.clear();
     ownerIdByPathRef.current.clear();
     folderIdByPathRef.current.clear();
+    setGalleryIdByPath(new Map());
+    setOwnerTypeByPath(new Map());
     setCachedFiles([]);
     setLoadedCount(0);
     setStaggerWindow({ start: 0, epoch: 0 });
     lastPrefetchedStartRef.current = -1;
+
+    const isStaleLoad = () => loadGeneration !== galleryLoadGenerationRef.current;
 
     try {
       if (activeSidebarFilter !== "evidence" && activeFolderId) {
@@ -1186,6 +1281,10 @@ export default function GalleryPage() {
           homeId,
           { folderId: activeFolderId }
         );
+
+        if (isStaleLoad()) {
+          return;
+        }
 
         if (!galleryMetaResult.ok) {
           setAllPaths([]);
@@ -1221,26 +1320,45 @@ export default function GalleryPage() {
         ownerIdByPathRef.current = ownerIdMap;
         folderIdByPathRef.current = folderIdMap;
         setGalleryIdByPath(idMap);
+        setOwnerTypeByPath(ownerTypeMap);
         setAllPaths(filteredPaths);
 
         if (filteredPaths.length === 0) {
           return;
         }
 
-        const end = await loadMorePaths(userId, homeId, filteredPaths, 0, false);
+        const end = await loadMorePaths(
+          userId,
+          homeId,
+          filteredPaths,
+          0,
+          false,
+          loadGeneration
+        );
+        if (isStaleLoad()) {
+          return;
+        }
         void prefetchNextBatch(userId, homeId, filteredPaths, end);
         return;
       }
 
-      const [{ data: listed, error: listError }, galleryMetaResult] =
-        await Promise.all([
-          getCachedStorageList(userId, homeId, "gallery", () =>
-            supabase.storage
-              .from(BUCKET)
-              .list(`${userId}/${homeId}`, { limit: LIST_LIMIT })
-          ),
-          fetchGalleryItemsForHome(userId, homeId),
-        ]);
+      const [
+        { data: listed, error: listError },
+        galleryMetaResult,
+        snapshotEvidenceResult,
+      ] = await Promise.all([
+        getCachedStorageList(userId, homeId, "gallery", () =>
+          supabase.storage
+            .from(BUCKET)
+            .list(`${userId}/${homeId}`, { limit: LIST_LIMIT })
+        ),
+        fetchGalleryItemsForHome(userId, homeId),
+        fetchSnapshotGalleryEvidence(homeId),
+      ]);
+
+      if (isStaleLoad()) {
+        return;
+      }
 
       if (listError) {
         setAllPaths([]);
@@ -1250,9 +1368,12 @@ export default function GalleryPage() {
 
       const paths = buildPathsFromList(listed, userId, homeId);
       const galleryItems = galleryMetaResult.ok ? galleryMetaResult.items : [];
-      const displayEntries = buildGalleryDisplayEntriesFromPaths(
-        paths,
-        galleryItems
+      const snapshotGalleryIds = snapshotEvidenceResult.ok
+        ? snapshotEvidenceResult.galleryIdsBySnapshotId
+        : new Map<string, Set<string>>();
+      const displayEntries = enrichGalleryEntriesWithSnapshotOwnership(
+        buildGalleryDisplayEntriesFromPaths(paths, galleryItems),
+        snapshotGalleryIds
       );
       const filteredEntries =
         activeSidebarFilter === "evidence" && activeEvidenceRecord !== null
@@ -1282,21 +1403,37 @@ export default function GalleryPage() {
       ownerIdByPathRef.current = ownerIdMap;
       folderIdByPathRef.current = folderIdMap;
       setGalleryIdByPath(idMap);
+      setOwnerTypeByPath(ownerTypeMap);
       setAllPaths(filteredPaths);
 
       if (filteredPaths.length === 0) {
         return;
       }
 
-      const end = await loadMorePaths(userId, homeId, filteredPaths, 0, false);
+      const end = await loadMorePaths(
+        userId,
+        homeId,
+        filteredPaths,
+        0,
+        false,
+        loadGeneration
+      );
+      if (isStaleLoad()) {
+        return;
+      }
       void prefetchNextBatch(userId, homeId, filteredPaths, end);
     } catch (err) {
+      if (isStaleLoad()) {
+        return;
+      }
       setAllPaths([]);
       setError(
         err instanceof Error ? err.message : "Could not load gallery images."
       );
     } finally {
-      setLoading(false);
+      if (loadGeneration === galleryLoadGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, [
     state,
@@ -1398,6 +1535,7 @@ export default function GalleryPage() {
         }
       }
       setGalleryIdByPath(new Map(galleryIdByPathRef.current));
+      setOwnerTypeByPath(new Map(ownerTypeByPathRef.current));
     }
 
     clearSelection();
@@ -1682,21 +1820,36 @@ export default function GalleryPage() {
     setMarkEvidenceTarget(null);
   }, [markingEvidence]);
 
-  const openMarkEvidenceModal = useCallback((file: GalleryFile) => {
-    if (activeSidebarFilter === "evidence") {
-      return;
-    }
-    if (!file.galleryId || file.ownerType !== null) {
-      return;
-    }
-    setMarkEvidenceError(null);
-    setMarkEvidenceSelection(null);
-    setMarkEvidenceTarget({
-      galleryId: file.galleryId,
-      imageName: file.name,
-    });
-    setIsMarkEvidenceOpen(true);
-  }, [activeSidebarFilter]);
+  const canShowMarkAsEvidence = useCallback(
+    (file: GalleryFile) => {
+      if (activeSidebarFilter === "evidence" || file.galleryId === null) {
+        return false;
+      }
+      const ownerType = ownerTypeByPath.get(file.path) ?? file.ownerType;
+      return ownerType === null;
+    },
+    [activeSidebarFilter, ownerTypeByPath]
+  );
+
+  const openMarkEvidenceModal = useCallback(
+    (file: GalleryFile) => {
+      if (activeSidebarFilter === "evidence") {
+        return;
+      }
+      const ownerType = ownerTypeByPath.get(file.path) ?? file.ownerType;
+      if (!file.galleryId || ownerType !== null) {
+        return;
+      }
+      setMarkEvidenceError(null);
+      setMarkEvidenceSelection(null);
+      setMarkEvidenceTarget({
+        galleryId: file.galleryId,
+        imageName: file.name,
+      });
+      setIsMarkEvidenceOpen(true);
+    },
+    [activeSidebarFilter, ownerTypeByPath]
+  );
 
   const handleMarkEvidenceSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -1757,7 +1910,14 @@ export default function GalleryPage() {
     setLoadingMore(true);
 
     try {
-      const end = await loadMorePaths(userId, homeId, allPaths, loadedCount, true);
+      const end = await loadMorePaths(
+        userId,
+        homeId,
+        allPaths,
+        loadedCount,
+        true,
+        galleryLoadGenerationRef.current
+      );
       void prefetchNextBatch(userId, homeId, allPaths, end);
     } catch (err) {
       setError(
@@ -1836,7 +1996,9 @@ export default function GalleryPage() {
 
     if (
       uploadContextSnapshot.mode === "evidence" &&
-      uploadContextSnapshot.evidenceRecord
+      uploadContextSnapshot.evidenceRecord &&
+      uploadContextSnapshot.evidenceRecord.ownerType !==
+        SNAPSHOT_EVIDENCE_OWNER_TYPE
     ) {
       uploadContext = uploadContextSnapshot.evidenceRecord.ownerType;
       uploadOwnerId = uploadContextSnapshot.evidenceRecord.ownerId;
@@ -1946,10 +2108,7 @@ export default function GalleryPage() {
                 const isSelected =
                   file.galleryId != null && selectedIdSet.has(file.galleryId);
                 const selectable = file.galleryId != null && !bulkDeleting;
-                const canMarkAsEvidence =
-                  activeSidebarFilter !== "evidence" &&
-                  file.galleryId !== null &&
-                  file.ownerType === null;
+                const canMarkAsEvidence = canShowMarkAsEvidence(file);
 
                 return (
                   <li
@@ -2031,10 +2190,7 @@ export default function GalleryPage() {
                 const isSelected =
                   file.galleryId != null && selectedIdSet.has(file.galleryId);
                 const selectable = file.galleryId != null && !bulkDeleting;
-                const canMarkAsEvidence =
-                  activeSidebarFilter !== "evidence" &&
-                  file.galleryId !== null &&
-                  file.ownerType === null;
+                const canMarkAsEvidence = canShowMarkAsEvidence(file);
 
                 return (
                   <li
@@ -2197,7 +2353,11 @@ export default function GalleryPage() {
               onSubmit={(e) => void handleMarkEvidenceSubmit(e)}
             >
               <div className="gallery-evidence-mark-sections">
-                {evidenceSections.map((section) => (
+                {evidenceSections
+                  .filter(
+                    (section) => section.ownerType !== SNAPSHOT_EVIDENCE_OWNER_TYPE
+                  )
+                  .map((section) => (
                   <div key={section.ownerType} className="gallery-evidence-section">
                     <h4 className="gallery-evidence-section-title">{section.title}</h4>
                     {section.records.length === 0 ? (

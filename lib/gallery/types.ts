@@ -1,11 +1,13 @@
 export const GALLERY_OWNER_TYPE_MAINTENANCE = "maintenance" as const;
 export const GALLERY_OWNER_TYPE_NOTE = "note" as const;
 export const GALLERY_OWNER_TYPE_COMMUNICATION = "communication" as const;
+export const GALLERY_OWNER_TYPE_COMPLEX = "complex" as const;
 
 export type GalleryOwnerType =
   | typeof GALLERY_OWNER_TYPE_MAINTENANCE
   | typeof GALLERY_OWNER_TYPE_NOTE
-  | typeof GALLERY_OWNER_TYPE_COMMUNICATION;
+  | typeof GALLERY_OWNER_TYPE_COMMUNICATION
+  | typeof GALLERY_OWNER_TYPE_COMPLEX;
 
 export type GalleryItem = {
   id: string;

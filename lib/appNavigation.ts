@@ -35,6 +35,9 @@ export const ROUTE_DASHBOARD_MY_HOME = "/dashboard/my-home";
 
 export const ROUTE_DASHBOARD_GALLERY = "/dashboard/gallery";
 
+export const ROUTE_DASHBOARD_SNAPSHOTS_PREFIX = "/dashboard/snapshots";
+
+export const ROUTE_DASHBOARD_COMPLEX = "/dashboard/complex";
 export const ROUTE_DASHBOARD_MAINTENANCE = "/dashboard/maintenance";
 
 export const ROUTE_DASHBOARD_NOTES = "/dashboard/notes";
@@ -44,6 +47,22 @@ export const ROUTE_DASHBOARD_COMMUNICATIONS = "/dashboard/communications";
 export const ROUTE_DASHBOARD_VAULT = "/dashboard/vault";
 
 export const ROUTE_LOGIN = "/login";
+
+export function dashboardHomeSnapshotsPath(homeId: string): string {
+  return `/dashboard/home/${homeId}/snapshots`;
+}
+
+/** @deprecated Prefer `dashboardSnapshotDetailPath` for the main snapshot UI. */
+export function dashboardSnapshotPath(
+  homeId: string,
+  snapshotId: string
+): string {
+  return `/dashboard/home/${homeId}/snapshots/${snapshotId}`;
+}
+
+export function dashboardSnapshotDetailPath(snapshotId: string): string {
+  return `/dashboard/snapshots/${snapshotId}`;
+}
 
 
 
