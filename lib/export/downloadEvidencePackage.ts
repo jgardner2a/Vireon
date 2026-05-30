@@ -6,6 +6,7 @@ import {
   assertCanExportEvidencePackage,
 } from "@/lib/billing/planEnforcement";
 import { consumeExportEntitlement } from "@/lib/billing/consumeExportEntitlement";
+import { buildEvidenceManifest } from "@/lib/export/buildManifest";
 import { formatExportFileStamp } from "@/lib/export/formatExportDate";
 import { gatherEvidencePackageContent } from "@/lib/export/gatherEvidencePackageContent";
 import { generateEvidenceReportPdf } from "@/lib/export/generateEvidenceReportPdf";

@@ -46,6 +46,43 @@ export function invalidateUserProfileCache(): void {
   cachedProfile = null;
 }
 
+function coerceProfileRow(value: unknown): ProfileRow | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const { id, plan } = record;
+
+  if (typeof id !== "string" || typeof plan !== "string") {
+    return null;
+  }
+
+  return {
+    id,
+    plan,
+    storage_bytes_used:
+      typeof record.storage_bytes_used === "number"
+        ? record.storage_bytes_used
+        : undefined,
+    export_credits:
+      typeof record.export_credits === "number" ? record.export_credits : undefined,
+    pro_included_export_used:
+      typeof record.pro_included_export_used === "boolean"
+        ? record.pro_included_export_used
+        : undefined,
+    stripe_customer_id:
+      record.stripe_customer_id === null ||
+      typeof record.stripe_customer_id === "string"
+        ? record.stripe_customer_id
+        : undefined,
+    created_at:
+      typeof record.created_at === "string" ? record.created_at : undefined,
+    updated_at:
+      typeof record.updated_at === "string" ? record.updated_at : undefined,
+  };
+}
+
 function mapProfileRow(row: ProfileRow): UserProfile | null {
   if (!isPlanTier(row.plan)) {
     console.error("[billing] invalid plan on profile", row.plan);
@@ -80,12 +117,12 @@ async function queryProfileRowOnce(userId: string): Promise<QueryProfileResult> 
       .limit(1);
 
     if (!error) {
-      const row = data?.[0];
+      const row = coerceProfileRow(data?.[0]);
       if (!row) {
         return { ok: false, error: null, message: "Profile not found." };
       }
 
-      return { ok: true, row: row as ProfileRow };
+      return { ok: true, row };
     }
 
     if (!isIgnorableBillingError(error)) {
