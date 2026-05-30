@@ -97,34 +97,43 @@ export async function POST(request: Request) {
     }
 
     if (source === "pro_included") {
-      const { error: updateError } = await admin
-        .from("profiles")
-        .update({ pro_included_export_used: true })
-        .eq("id", user.id);
+      const { data: consumed, error: consumeError } = await admin.rpc(
+        "consume_pro_included_export",
+        { p_user_id: user.id }
+      );
 
-      if (updateError) {
+      if (consumeError) {
+        console.error("[billing] consume pro included export", consumeError);
         return NextResponse.json(
           { ok: false, message: "Could not record your included Pro export." },
           { status: 500 }
         );
       }
-    } else {
-      if (exportCredits <= 0) {
+
+      if (!consumed) {
         return NextResponse.json(
-          { ok: false, message: "No export credits available." },
+          { ok: false, message: "No included Pro export available." },
           { status: 403 }
         );
       }
+    } else {
+      const { data: remainingCredits, error: consumeError } = await admin.rpc(
+        "consume_export_credit",
+        { p_user_id: user.id }
+      );
 
-      const { error: updateError } = await admin
-        .from("profiles")
-        .update({ export_credits: exportCredits - 1 })
-        .eq("id", user.id);
-
-      if (updateError) {
+      if (consumeError) {
+        console.error("[billing] consume export credit", consumeError);
         return NextResponse.json(
           { ok: false, message: "Could not use your export credit." },
           { status: 500 }
+        );
+      }
+
+      if (remainingCredits === null || remainingCredits === undefined) {
+        return NextResponse.json(
+          { ok: false, message: "No export credits available." },
+          { status: 403 }
         );
       }
     }

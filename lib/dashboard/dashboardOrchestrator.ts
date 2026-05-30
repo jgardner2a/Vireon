@@ -79,6 +79,33 @@ export async function reconcileDashboardHome(
   return resolveDashboardHome(homes, pointerHomeId);
 }
 
+/** Reload plan/export fields without refetching homes (e.g. after export consume). */
+export async function reloadDashboardBillingFields(
+  userId: string
+): Promise<
+  Pick<
+    DashboardState,
+    "plan" | "exportCredits" | "proIncludedExportUsed" | "storageBytesUsed"
+  >
+> {
+  const profileResult = await getUserProfile(userId, userId);
+  const plan = profileResult.ok ? profileResult.profile.plan : "free";
+  const exportCredits = profileResult.ok
+    ? profileResult.profile.export_credits
+    : 0;
+  const proIncludedExportUsed = profileResult.ok
+    ? profileResult.profile.pro_included_export_used
+    : false;
+  const storageBytesUsed = await getUserStorageBytesUsed(userId, plan);
+
+  return {
+    plan,
+    exportCredits,
+    proIncludedExportUsed,
+    storageBytesUsed,
+  };
+}
+
 /** Coordinated dashboard identity + home resolution for client pages. */
 export async function getDashboardState(
   authUserId?: string | null

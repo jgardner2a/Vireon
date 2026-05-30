@@ -8,8 +8,9 @@ Schema changes are applied in the **Supabase Dashboard → SQL Editor**, not via
 2. Run `002_profile_export_entitlements.sql` to add export credit columns.
 3. Run `003_documents_file_size.sql` so Pro storage can include the documents bucket.
 4. Run `004_profiles_api_grants.sql` if the app cannot read `profiles` (permission errors).
-5. Confirm in **Table Editor**: `profiles` and `subscriptions` exist with expected columns.
-6. Confirm **Authentication → Users**: new sign-ups get a `profiles` row with `plan = free`.
+5. Run `005_consume_export_functions.sql` for atomic export consumption (required for the consume-export API).
+6. Confirm in **Table Editor**: `profiles` and `subscriptions` exist with expected columns.
+7. Confirm **Authentication → Users**: new sign-ups get a `profiles` row with `plan = free`.
 
 ## After running
 
@@ -43,3 +44,21 @@ update public.profiles
 set pro_included_export_used = false
 where id = 'USER-UUID-HERE';
 ```
+
+## Test atomic consume (SQL Editor)
+
+Replace `USER-UUID-HERE` with a real user id from **Authentication → Users**.
+
+Purchased credit (only works if `export_credits > 0`):
+
+```sql
+select public.consume_export_credit('USER-UUID-HERE'::uuid);
+```
+
+Pro included export (only works if `plan = 'pro'` and `pro_included_export_used = false`):
+
+```sql
+select public.consume_pro_included_export('USER-UUID-HERE'::uuid);
+```
+
+Returns `null` / `false` when nothing was available to consume.

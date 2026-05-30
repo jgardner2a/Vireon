@@ -13,6 +13,7 @@ import {
   DashboardStateError,
   getDashboardState,
   reconcileDashboardHome,
+  reloadDashboardBillingFields,
   type DashboardState,
 } from "@/lib/dashboard/dashboardOrchestrator";
 import type { Home } from "@/lib/home/homeMapper";
@@ -99,22 +100,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
       const pointerHomeId = await getCachedCurrentHomeId(userId);
       const homes = homesCacheRef.current;
-      const { currentHomeId, currentHome } = await reconcileDashboardHome(
-        userId,
-        homes,
-        pointerHomeId
-      );
+      const [{ currentHomeId, currentHome }, billing] = await Promise.all([
+        reconcileDashboardHome(userId, homes, pointerHomeId),
+        reloadDashboardBillingFields(userId),
+      ]);
 
-      setState((previous) => ({
+      setState({
         userId,
-        plan: previous?.plan ?? "free",
-        exportCredits: previous?.exportCredits ?? 0,
-        proIncludedExportUsed: previous?.proIncludedExportUsed ?? false,
-        storageBytesUsed: previous?.storageBytesUsed ?? 0,
+        ...billing,
         homes,
         currentHomeId,
         currentHome,
-      }));
+      });
     } catch (err) {
       setState(null);
       setError(

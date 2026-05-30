@@ -1,10 +1,4 @@
-import {
-  assertCanCreateHome,
-  assertCanCreateEvidenceLog,
-  assertCanAttachLogImages,
-  assertCanUploadStorageBytes,
-  assertCanExportEvidencePackage,
-} from "@/lib/billing/planEnforcement";
+import { assertCanExportEvidencePackage } from "@/lib/billing/planEnforcement";
 import { consumeExportEntitlement } from "@/lib/billing/consumeExportEntitlement";
 import { buildEvidenceManifest } from "@/lib/export/buildManifest";
 import { formatExportFileStamp } from "@/lib/export/formatExportDate";
@@ -22,6 +16,9 @@ import type {
   ExportProgress,
   ExportSelectionState,
 } from "@/lib/export/types";
+
+const EXPORT_BUILD_FAILED_MESSAGE =
+  "Your export entitlement was applied, but the package could not be finished. Try again or contact support if this keeps happening.";
 
 function triggerBrowserDownload(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
@@ -53,13 +50,24 @@ export async function downloadEvidencePackage(input: {
     input.onProgress?.({ phase, message });
   };
 
+  let entitlementConsumed = false;
+
   try {
-    reportProgress("gathering", "Gathering selected records…");
+    reportProgress("authorizing", "Confirming export entitlement…");
 
     const exportEligibility = await assertCanExportEvidencePackage(input.userId);
     if (!exportEligibility.ok) {
       return exportEligibility;
     }
+
+    const consumeResult = await consumeExportEntitlement(exportEligibility.source);
+    if (!consumeResult.ok) {
+      return consumeResult;
+    }
+
+    entitlementConsumed = true;
+
+    reportProgress("gathering", "Gathering selected records…");
 
     const selectedIds = getSelectedItemIds(input.inventory, input.selection);
     const contentResult = await gatherEvidencePackageContent({
@@ -72,7 +80,7 @@ export async function downloadEvidencePackage(input: {
     });
 
     if (!contentResult.ok) {
-      return contentResult;
+      return { ok: false, message: EXPORT_BUILD_FAILED_MESSAGE };
     }
 
     const content = contentResult.content;
@@ -146,18 +154,14 @@ export async function downloadEvidencePackage(input: {
     triggerBrowserDownload(archiveBlob, archiveName);
     reportProgress("done", "Download started.");
 
-    const consumeResult = await consumeExportEntitlement(exportEligibility.source);
-    if (!consumeResult.ok) {
-      return consumeResult;
-    }
-
     return { ok: true };
   } catch (error) {
     console.error("[export] download package", error);
     return {
       ok: false,
-      message:
-        error instanceof Error
+      message: entitlementConsumed
+        ? EXPORT_BUILD_FAILED_MESSAGE
+        : error instanceof Error
           ? error.message
           : "Could not generate the evidence package.",
     };

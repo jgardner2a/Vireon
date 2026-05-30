@@ -102,7 +102,7 @@ export type EvidencePackageContent = {
 };
 
 export type ExportProgress = {
-  phase: "gathering" | "images" | "pdf" | "zip" | "done";
+  phase: "authorizing" | "gathering" | "images" | "pdf" | "zip" | "done";
   message: string;
 };
 

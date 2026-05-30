@@ -1,4 +1,5 @@
 import type { ExportEntitlementSource } from "@/lib/billing/types";
+import { invalidateUserProfileCache } from "@/lib/billing/getUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 
 export type ConsumeExportEntitlementResult =
@@ -17,26 +18,35 @@ export async function consumeExportEntitlement(
     return { ok: false, message: "Sign in to export your evidence package." };
   }
 
-  const response = await fetch("/api/billing/consume-export", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ source }),
-  });
+  try {
+    const response = await fetch("/api/billing/consume-export", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ source }),
+    });
 
-  const payload = (await response.json()) as {
-    ok?: boolean;
-    message?: string;
-  };
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      message?: string;
+    };
 
-  if (!response.ok || !payload.ok) {
+    if (!response.ok || !payload.ok) {
+      return {
+        ok: false,
+        message: payload.message || "Could not apply export entitlement.",
+      };
+    }
+
+    invalidateUserProfileCache();
+    return { ok: true };
+  } catch (error) {
+    console.error("[billing] consume export entitlement", error);
     return {
       ok: false,
-      message: payload.message || "Could not apply export entitlement.",
+      message: "Could not apply export entitlement.",
     };
   }
-
-  return { ok: true };
 }
