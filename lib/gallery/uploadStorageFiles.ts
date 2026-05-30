@@ -13,7 +13,9 @@ import {
   GALLERY_OWNER_TYPE_MAINTENANCE,
   GALLERY_OWNER_TYPE_NOTE,
 } from "@/lib/gallery/types";
+import { isEvidenceLogImageFile } from "@/lib/attachments/evidenceLogImageFiles";
 import { safeGalleryFileName } from "@/lib/gallery/safeFileName";
+import { prepareImageForUpload } from "@/lib/media/prepareImageForUpload";
 import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
 import { invalidateStorageCache } from "@/lib/storageCache";
 import { supabase } from "@/lib/supabaseClient";
@@ -95,9 +97,7 @@ export async function uploadFilesToGallery(
 ): Promise<
   { ok: true; storagePaths: string[] } | { ok: false; message: string }
 > {
-  const imageFiles = input.files.filter((file) =>
-    file.type.startsWith("image/")
-  );
+  const imageFiles = input.files.filter(isEvidenceLogImageFile);
 
   if (imageFiles.length === 0) {
     return { ok: true, storagePaths: [] };
@@ -106,13 +106,14 @@ export async function uploadFilesToGallery(
   const storagePaths: string[] = [];
 
   for (const file of imageFiles) {
-    const fileName = safeGalleryFileName(file.name);
+    const prepared = await prepareImageForUpload(file);
+    const fileName = safeGalleryFileName(prepared.name);
     const path = storagePath(input.userId, input.homeId, fileName);
 
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .upload(path, file, {
-        contentType: file.type || "image/jpeg",
+      .upload(path, prepared, {
+        contentType: prepared.type || "image/webp",
         upsert: false,
       });
 
@@ -125,7 +126,7 @@ export async function uploadFilesToGallery(
     }
 
     const timestamp = new Date().toISOString();
-    const row = buildGalleryInsertRow(input, path, fileName, file, timestamp);
+    const row = buildGalleryInsertRow(input, path, fileName, prepared, timestamp);
 
     const { error: insertError } = await supabase.from("gallery").insert(row);
 

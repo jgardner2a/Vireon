@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ROUTE_DASHBOARD, ROUTE_DASHBOARD_MY_HOME } from "@/lib/appNavigation";
+import {
+  ROUTE_DASHBOARD,
+  ROUTE_DASHBOARD_EVIDENCE_PACKAGE,
+  ROUTE_DASHBOARD_MY_HOME,
+} from "@/lib/appNavigation";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   getDashboardSnapshot,
@@ -297,6 +301,13 @@ export default function DashboardPage() {
       <section id="my-home">
       <header className="my-home-topbar">
         <h1 className="my-home-page-title">Dashboard</h1>
+        <Link
+          href={ROUTE_DASHBOARD_EVIDENCE_PACKAGE}
+          className="my-home-btn-primary"
+          style={{ textDecoration: "none", display: "inline-block" }}
+        >
+          Download Evidence Package
+        </Link>
       </header>
 
       {dashboardError ? (

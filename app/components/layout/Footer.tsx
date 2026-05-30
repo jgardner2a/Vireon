@@ -2,14 +2,25 @@ import Link from "next/link";
 import {
   DEFAULT_SIGN_IN_REDIRECT,
   loginHref,
+  ROUTE_ACCOUNT_DELETION,
   ROUTE_DASHBOARD,
+  ROUTE_DASHBOARD_SETTINGS,
   ROUTE_HOME,
+  ROUTE_PRIVACY,
+  ROUTE_TERMS,
 } from "@/lib/appNavigation";
 import "./footer.css";
 
 const PRODUCT_LINKS = [
   { href: ROUTE_HOME, label: "Home" },
   { href: ROUTE_DASHBOARD, label: "Dashboard" },
+  { href: ROUTE_DASHBOARD_SETTINGS, label: "Settings" },
+] as const;
+
+const LEGAL_LINKS = [
+  { href: ROUTE_PRIVACY, label: "Privacy Policy" },
+  { href: ROUTE_TERMS, label: "Terms of Service" },
+  { href: ROUTE_ACCOUNT_DELETION, label: "Account Deletion" },
 ] as const;
 
 export function GlobalFooter() {
@@ -26,7 +37,7 @@ export function GlobalFooter() {
             <span className="vireon-global-footer__name">Vireon</span>
           </div>
           <p className="vireon-global-footer__tagline">
-            Sign in, sign up, and a minimal workspace shell.
+            Property documentation and recordkeeping for residents.
           </p>
         </div>
 
@@ -34,6 +45,19 @@ export function GlobalFooter() {
           <h2 className="vireon-global-footer__heading">Product</h2>
           <ul className="vireon-global-footer__links">
             {PRODUCT_LINKS.map((item) => (
+              <li key={item.label}>
+                <Link href={item.href} className="vireon-global-footer__link">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="vireon-global-footer__col">
+          <h2 className="vireon-global-footer__heading">Legal</h2>
+          <ul className="vireon-global-footer__links">
+            {LEGAL_LINKS.map((item) => (
               <li key={item.label}>
                 <Link href={item.href} className="vireon-global-footer__link">
                   {item.label}

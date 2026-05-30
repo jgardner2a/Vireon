@@ -4,6 +4,7 @@ import {
 } from "@/lib/documents/documentConfig";
 import type { DocumentType } from "@/lib/documents/documentConfig";
 import { createDocumentViewUrl } from "@/lib/documents/documentSignedUrl";
+import { prepareImageForUpload } from "@/lib/media/prepareImageForUpload";
 import type { HomeDocument, UploadHomeDocumentInput } from "@/lib/documents/types";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -109,10 +110,44 @@ async function deleteDocumentRecordAndStorage(
   return { ok: true };
 }
 
+export async function deleteAllDocumentsForHome(
+  homeId: string
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("id, home_id, type, file_name, storage_path, created_at")
+    .eq("home_id", homeId);
+
+  if (error) {
+    console.error("[documents] fetch for delete", error);
+    return {
+      ok: false,
+      message: error.message || "Could not load documents for deletion.",
+    };
+  }
+
+  const rows = (data ?? [])
+    .map((row) => mapRow(row as DocumentRow))
+    .filter((row): row is Omit<HomeDocument, "viewUrl"> => row !== null);
+
+  for (const document of rows) {
+    const deleted = await deleteDocumentRecordAndStorage(document);
+    if (!deleted.ok) {
+      return deleted;
+    }
+  }
+
+  return { ok: true };
+}
+
 export async function uploadHomeDocument(
   input: UploadHomeDocumentInput
 ): Promise<{ ok: true; document: HomeDocument } | { ok: false; message: string }> {
-  const fileName = safeDocumentFileName(input.file.name);
+  const isImageUpload = input.file.type.startsWith("image/");
+  const prepared = isImageUpload
+    ? await prepareImageForUpload(input.file)
+    : input.file;
+  const fileName = safeDocumentFileName(prepared.name);
   const storagePath = documentStoragePath(input.homeId, input.type, fileName);
 
   const existingResult = await fetchDocumentsForHome(input.homeId);
@@ -130,9 +165,9 @@ export async function uploadHomeDocument(
 
   const { error: uploadError } = await supabase.storage
     .from(DOCUMENTS_BUCKET)
-    .upload(storagePath, input.file, {
+    .upload(storagePath, prepared, {
       upsert: true,
-      contentType: input.file.type || undefined,
+      contentType: prepared.type || undefined,
     });
 
   if (uploadError) {

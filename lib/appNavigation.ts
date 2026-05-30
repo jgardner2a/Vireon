@@ -46,7 +46,17 @@ export const ROUTE_DASHBOARD_COMMUNICATIONS = "/dashboard/communications";
 
 export const ROUTE_DASHBOARD_VAULT = "/dashboard/vault";
 
+export const ROUTE_DASHBOARD_SETTINGS = "/dashboard/settings";
+
+export const ROUTE_DASHBOARD_EVIDENCE_PACKAGE = "/dashboard/evidence-package";
+
 export const ROUTE_LOGIN = "/login";
+
+export const ROUTE_PRIVACY = "/privacy";
+
+export const ROUTE_TERMS = "/terms";
+
+export const ROUTE_ACCOUNT_DELETION = "/account-deletion";
 
 export function dashboardHomeSnapshotsPath(homeId: string): string {
   return `/dashboard/home/${homeId}/snapshots`;

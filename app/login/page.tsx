@@ -8,9 +8,12 @@ import {
   DEFAULT_SIGN_UP_REDIRECT,
   resolveSafeRedirectPath,
   ROUTE_HOME,
+  ROUTE_PRIVACY,
+  ROUTE_TERMS,
 } from "@/lib/appNavigation";
 import { PASSWORD_MIN_LENGTH } from "@/lib/authValidation";
 import { signInUser, signUpUser } from "@/lib/authUsers";
+import "@/app/components/legal/legal.css";
 
 function LoginForm() {
   const router = useRouter();
@@ -122,6 +125,14 @@ function LoginForm() {
             {error}
           </p>
         )}
+
+        {isSignUp ? (
+          <p className="legal-login-note">
+            By creating an account, you agree to our{" "}
+            <Link href={ROUTE_TERMS}>Terms of Service</Link> and{" "}
+            <Link href={ROUTE_PRIVACY}>Privacy Policy</Link>.
+          </p>
+        ) : null}
 
         <button style={button} type="submit" disabled={submitting}>
           {submitting

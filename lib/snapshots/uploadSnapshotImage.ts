@@ -9,6 +9,7 @@ import {
 } from "@/lib/snapshots/snapshotImageRow";
 import { snapshotStorageFileName } from "@/lib/snapshots/snapshotStorageFileName";
 import type { SnapshotImage } from "@/lib/snapshots/types";
+import { prepareImageForUpload } from "@/lib/media/prepareImageForUpload";
 import { getCachedUserId } from "@/lib/sessionCache";
 import { invalidateStorageCache } from "@/lib/storageCache";
 import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
@@ -112,14 +113,15 @@ export async function uploadSnapshotImage(
   }
 
   const { snapshot } = contextResult;
-  const fileName = snapshotStorageFileName(file.name);
+  const prepared = await prepareImageForUpload(file);
+  const fileName = snapshotStorageFileName(prepared.name);
   const path = storagePath(userId, snapshot.home_id, fileName);
   const timestamp = new Date().toISOString();
 
   const { error: uploadError } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(path, file, {
-      contentType: file.type || "image/jpeg",
+    .upload(path, prepared, {
+      contentType: prepared.type || "image/webp",
       upsert: false,
     });
 
@@ -143,9 +145,9 @@ export async function uploadSnapshotImage(
       created_at: timestamp,
       updated_at: timestamp,
       file_name: fileName,
-      file_type: file.type.startsWith("image/") ? "image" : "file",
-      file_size: file.size,
-      mime_type: file.type || "image/jpeg",
+      file_type: prepared.type.startsWith("image/") ? "image" : "file",
+      file_size: prepared.size,
+      mime_type: prepared.type || "image/webp",
       folder_id: null,
       owner_type: null,
       owner_id: null,

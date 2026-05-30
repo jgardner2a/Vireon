@@ -1,0 +1,108 @@
+.vault-header {
+  margin-bottom: 24px;
+}
+
+.vault-header .dashboard-subtitle {
+  margin: 0;
+}
+
+.vault-section {
+  margin-bottom: 20px;
+}
+
+.vault-section-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+.vault-card {
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.vault-property-name {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+
+.vault-property-address {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.vault-summary-total {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+.vault-summary-meta {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.vault-module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-module-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #f0f0f0;
+}
+
+.vault-module-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.vault-module-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+
+.vault-module-counts {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: #666;
+  text-align: right;
+}
+
+.vault-module-empty {
+  color: #999;
+}
+.vault-error {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.vault-placeholder {
+  color: #666;
+}
+
+.vault-error {
+  color: #b91c1c;
+}

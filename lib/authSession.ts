@@ -93,3 +93,15 @@ export async function clearAuthSession(): Promise<void> {
   invalidateDashboardSnapshot();
   notifyAuthChanged();
 }
+
+/** Ends the session on all devices for the current user. */
+export async function clearAuthSessionEverywhere(): Promise<void> {
+  const { error } = await supabase.auth.signOut({ scope: "global" });
+  if (error) {
+    console.error("[auth] signOut global", error);
+  }
+  applySessionMirror(null);
+  clearSessionCache();
+  invalidateDashboardSnapshot();
+  notifyAuthChanged();
+}
