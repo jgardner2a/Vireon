@@ -13,6 +13,10 @@ export type ChangePasswordResult =
   | { ok: true }
   | { ok: false; message: string; field?: ChangePasswordField };
 
+type ChangePasswordValidationResult =
+  | { ok: true; newPassword: string }
+  | { ok: false; message: string; field?: ChangePasswordField };
+
 function messageFromAuthError(error: AuthError): string {
   const msg = error.message.toLowerCase();
 
@@ -30,7 +34,7 @@ function validateChangePasswordInput(
   currentPassword: string,
   newPassword: string,
   confirmPassword: string
-): ChangePasswordResult | { ok: true; newPassword: string } {
+): ChangePasswordValidationResult {
   if (!currentPassword.trim()) {
     return {
       ok: false,
