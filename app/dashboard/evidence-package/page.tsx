@@ -7,7 +7,14 @@ import {
   ROUTE_DASHBOARD,
   ROUTE_DASHBOARD_MY_HOME,
   ROUTE_DASHBOARD_VAULT,
+  ROUTE_DASHBOARD_SETTINGS,
 } from "@/lib/appNavigation";
+import { resolveExportEligibility } from "@/lib/billing/planEnforcement";
+import {
+  EXPORT_ONE_TIME_PRICE_LABEL,
+  PRO_ANNUAL_PRICE_LABEL,
+} from "@/lib/billing/planConfig";
+import { planExportBlockedMessage, planUpgradeHint } from "@/lib/billing/planCopy";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import { downloadEvidencePackage } from "@/lib/export/downloadEvidencePackage";
 import {
@@ -36,7 +43,7 @@ function formatImageCount(count: number): string {
 }
 
 export default function EvidencePackagePage() {
-  const { state, loading: dashboardLoading } = useDashboardState();
+  const { state, loading: dashboardLoading, refresh } = useDashboardState();
   const currentHome = state?.currentHome ?? null;
   const userId = state?.userId ?? null;
   const homeId = state?.currentHomeId ?? null;
@@ -93,6 +100,18 @@ export default function EvidencePackagePage() {
     }
     return computeExportPreview(inventory, selection);
   }, [inventory, selection]);
+
+  const exportEligibility = useMemo(() => {
+    if (!state) {
+      return null;
+    }
+
+    return resolveExportEligibility({
+      plan: state.plan,
+      exportCredits: state.exportCredits,
+      proIncludedExportUsed: state.proIncludedExportUsed,
+    });
+  }, [state]);
 
   const handleToggleModule = useCallback(
     (moduleId: EvidenceModuleId, checked: boolean) => {
@@ -162,6 +181,8 @@ export default function EvidencePackagePage() {
 
     if (!result.ok) {
       setExportError(result.message);
+    } else {
+      await refresh();
     }
 
     setGenerating(false);
@@ -172,6 +193,7 @@ export default function EvidencePackagePage() {
     inventory,
     selection,
     preview?.hasSelection,
+    refresh,
   ]);
 
   if (dashboardLoading) {
@@ -222,6 +244,42 @@ export default function EvidencePackagePage() {
           omit them from your download.
         </p>
       </header>
+
+      {exportEligibility && !exportEligibility.ok ? (
+        <section
+          className="evidence-package-card evidence-package-card--notice"
+          aria-label="Export availability"
+        >
+          <p className="evidence-package-error" role="status">
+            {planExportBlockedMessage()}
+          </p>
+          <p className="evidence-package-preview-placeholder">{planUpgradeHint()}</p>
+          <ul className="evidence-package-preview-list">
+            <li>Stay on Free and keep documenting evidence.</li>
+            <li>
+              Buy a one-time Evidence Package export ({EXPORT_ONE_TIME_PRICE_LABEL}).
+            </li>
+            <li>Upgrade to Pro ({PRO_ANNUAL_PRICE_LABEL}).</li>
+          </ul>
+          <Link
+            href={ROUTE_DASHBOARD_SETTINGS}
+            className="evidence-package-back-link"
+          >
+            View plan in Settings
+          </Link>
+        </section>
+      ) : exportEligibility?.ok ? (
+        <section
+          className="evidence-package-card evidence-package-card--notice"
+          aria-label="Export entitlement"
+        >
+          <p className="evidence-package-preview-summary">
+            {exportEligibility.source === "pro_included"
+              ? "This export will use your included Pro export for this billing period."
+              : `This export will use 1 purchased credit (${state?.exportCredits ?? 0} remaining after download).`}
+          </p>
+        </section>
+      ) : null}
 
       <section
         className="evidence-package-section"
@@ -331,7 +389,12 @@ export default function EvidencePackagePage() {
         <button
           type="button"
           className="dashboard-btn-primary"
-          disabled={!preview?.hasSelection || generating || inventoryLoading}
+          disabled={
+            !preview?.hasSelection ||
+            generating ||
+            inventoryLoading ||
+            !exportEligibility?.ok
+          }
           onClick={() => void handleGenerate()}
         >
           {generating ? "Generating…" : "Generate & download"}

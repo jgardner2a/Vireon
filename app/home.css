@@ -34,7 +34,7 @@
 
 .vireon-home-hero__title {
   margin: 0;
-  max-width: 16ch;
+  max-width: 18ch;
   font-size: clamp(2rem, 5vw, 2.75rem);
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -186,6 +186,52 @@
 }
 
 .vireon-home-feature-card__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.vireon-home-steps {
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  counter-reset: home-step;
+}
+
+.vireon-home-step {
+  padding: 22px 22px 22px 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.vireon-home-step__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: #0f172a;
+  border-radius: 999px;
+}
+
+.vireon-home-step__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.vireon-home-step__text {
   margin: 0;
   font-size: 14px;
   line-height: 1.55;

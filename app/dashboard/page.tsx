@@ -8,6 +8,8 @@ import {
   ROUTE_DASHBOARD_EVIDENCE_PACKAGE,
   ROUTE_DASHBOARD_MY_HOME,
 } from "@/lib/appNavigation";
+import { planSupportsPropertyHistory } from "@/lib/billing/planConfig";
+import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   getDashboardSnapshot,
@@ -181,6 +183,13 @@ export default function DashboardPage() {
   const currentHomeId = state?.currentHomeId ?? null;
   const currentHome = state?.currentHome ?? null;
   const previousHomes = homes.filter((home) => home.id !== currentHomeId);
+  const showPropertyHistory = planSupportsPropertyHistory(state?.plan ?? "free");
+  const evidenceLogRefreshToken = metrics
+    ? metrics.maintenanceCount +
+      metrics.complexCount +
+      metrics.communicationsCount +
+      metrics.notesCount
+    : 0;
 
   useEffect(() => {
     const onFocus = () => {
@@ -316,6 +325,8 @@ export default function DashboardPage() {
         </p>
       ) : null}
 
+      <PlanUsageHints variant="full" refreshToken={evidenceLogRefreshToken} />
+
       <section
         className="my-home-section"
         aria-labelledby="current-home-heading"
@@ -345,7 +356,9 @@ export default function DashboardPage() {
       ))}
       </section>
 
-      <PreviousHomesSection homes={previousHomes} />
+      {showPropertyHistory ? (
+        <PreviousHomesSection homes={previousHomes} />
+      ) : null}
     </div>
   );
 }

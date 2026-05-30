@@ -17,6 +17,7 @@ import {
   switchActiveHome,
   type Home,
 } from "@/lib/myHome";
+import { getPlanLimits, planSupportsPropertyHistory } from "@/lib/billing/planConfig";
 import { assertNoDirectHomeQuery } from "@/lib/home/homeContract";
 import "../dashboard-home.css";
 
@@ -255,7 +256,11 @@ export default function MyHomePage() {
   const currentHomeId = state?.currentHomeId ?? null;
   const currentHome = homes.find((home) => home.id === currentHomeId) ?? null;
   const previousHomes = homes.filter((home) => home.id !== currentHomeId);
+  const plan = state?.plan ?? "free";
+  const showPropertyHistory = planSupportsPropertyHistory(plan);
   const addPropertyLabel = homes.length === 0 ? "Add Property" : "Change Property";
+  const maxHomes = getPlanLimits(plan).maxHomes;
+  const canAddProperty = maxHomes === null || homes.length < maxHomes;
   const displayError = error ?? dashboardError;
 
   const loadDocuments = useCallback(async () => {
@@ -374,17 +379,19 @@ export default function MyHomePage() {
               Store and review home documents in one place.
             </p>
           </div>
-          <button
-            type="button"
-            className="my-home-btn-primary"
-            onClick={() => {
-              setForm(EMPTY_FORM);
-              setError(null);
-              setShowAddHomeModal(true);
-            }}
-          >
-            {addPropertyLabel}
-          </button>
+          {canAddProperty ? (
+            <button
+              type="button"
+              className="my-home-btn-primary"
+              onClick={() => {
+                setForm(EMPTY_FORM);
+                setError(null);
+                setShowAddHomeModal(true);
+              }}
+            >
+              {addPropertyLabel}
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -432,38 +439,40 @@ export default function MyHomePage() {
             </section>
           )}
 
-          <section
-            id="previous-homes"
-            className="my-home-section"
-            aria-labelledby="previous-homes-heading"
-          >
-            <h2 id="previous-homes-heading" className="my-home-section-title">
-              Previous Properties
-            </h2>
-            {previousHomes.length === 0 ? (
-              <div className="my-home-card">
-                <p className="my-home-empty" style={{ margin: 0 }}>
-                  No previous properties yet
-                </p>
-              </div>
-            ) : (
-              previousHomes.map((home) => (
-                <div key={home.id} className="my-home-card" style={{ marginBottom: 12 }}>
-                  <HomeCardContent home={home} />
-                  <div className="my-home-modal-actions" style={{ marginTop: 12 }}>
-                    <button
-                      type="button"
-                      className="my-home-btn-secondary"
-                      onClick={() => void handleSwitchActiveHome(home.id)}
-                      disabled={switchingHomeId === home.id}
-                    >
-                      {switchingHomeId === home.id ? "Switching..." : "Set Active"}
-                    </button>
-                  </div>
+          {showPropertyHistory ? (
+            <section
+              id="previous-homes"
+              className="my-home-section"
+              aria-labelledby="previous-homes-heading"
+            >
+              <h2 id="previous-homes-heading" className="my-home-section-title">
+                Previous Properties
+              </h2>
+              {previousHomes.length === 0 ? (
+                <div className="my-home-card">
+                  <p className="my-home-empty" style={{ margin: 0 }}>
+                    No previous properties yet
+                  </p>
                 </div>
-              ))
-            )}
-          </section>
+              ) : (
+                previousHomes.map((home) => (
+                  <div key={home.id} className="my-home-card" style={{ marginBottom: 12 }}>
+                    <HomeCardContent home={home} />
+                    <div className="my-home-modal-actions" style={{ marginTop: 12 }}>
+                      <button
+                        type="button"
+                        className="my-home-btn-secondary"
+                        onClick={() => void handleSwitchActiveHome(home.id)}
+                        disabled={switchingHomeId === home.id}
+                      >
+                        {switchingHomeId === home.id ? "Switching..." : "Set Active"}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </section>
+          ) : null}
         </div>
 
         <aside

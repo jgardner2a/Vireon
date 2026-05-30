@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PlanFeatureGate } from "@/app/dashboard/_components/PlanFeatureGate";
 import {
   ROUTE_DASHBOARD_EVIDENCE_PACKAGE,
   ROUTE_DASHBOARD_MY_HOME,
@@ -32,6 +33,18 @@ function formatModuleCounts(recordCount: number, imageCount: number): string {
 }
 
 export default function VaultPage() {
+  return (
+    <PlanFeatureGate
+      feature="vault"
+      title="Vault"
+      description="Read-only summary of documented evidence for the active property."
+    >
+      <VaultPageContent />
+    </PlanFeatureGate>
+  );
+}
+
+function VaultPageContent() {
   const { state, loading: dashboardLoading } = useDashboardState();
   const currentHome = state?.currentHome ?? null;
   const userId = state?.userId ?? null;

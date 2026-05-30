@@ -323,6 +323,20 @@ export async function deleteAllUserData(
     };
   }
 
+  const { error: subscriptionsError } = await admin
+    .from("subscriptions")
+    .delete()
+    .eq("user_id", normalizedUserId);
+
+  if (subscriptionsError) {
+    console.error("[account] delete subscriptions", subscriptionsError);
+    return {
+      ok: false,
+      message:
+        subscriptionsError.message || "Could not delete subscription records.",
+    };
+  }
+
   const { error: profilesError } = await admin
     .from("profiles")
     .delete()

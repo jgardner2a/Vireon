@@ -11,6 +11,7 @@ import {
   loginHref,
 } from "@/lib/appNavigation";
 import { useAuthSession } from "@/lib/useAuthSession";
+import { GlobalHeaderPlan } from "./GlobalHeaderPlan";
 
 /** App-wide header — sole location for auth actions (app/layout.tsx). */
 export function GlobalHeader() {
@@ -51,6 +52,7 @@ export function GlobalHeader() {
           {mounted &&
             (isAuthenticated ? (
               <>
+                <GlobalHeaderPlan />
                 {email ? (
                   <span
                     className="vireon-global-header__email"

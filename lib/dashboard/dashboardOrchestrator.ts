@@ -3,11 +3,19 @@ import {
   getCachedUserId,
   invalidateHomeCache,
 } from "@/lib/sessionCache";
+import { waitForBillingSessionUserId } from "@/lib/billing/billingSession";
+import { getUserProfile } from "@/lib/billing/getUserProfile";
+import { getUserStorageBytesUsed } from "@/lib/billing/planEnforcement";
+import type { PlanTier } from "@/lib/billing/types";
 import { mapHomeRow, type Home, type HomeRow } from "@/lib/home/homeMapper";
 import { supabase } from "@/lib/supabaseClient";
 
 export type DashboardState = {
   userId: string;
+  plan: PlanTier;
+  exportCredits: number;
+  proIncludedExportUsed: boolean;
+  storageBytesUsed: number;
   homes: Home[];
   currentHomeId: string | null;
   currentHome: Home | null;
@@ -72,16 +80,20 @@ export async function reconcileDashboardHome(
 }
 
 /** Coordinated dashboard identity + home resolution for client pages. */
-export async function getDashboardState(): Promise<DashboardState | null> {
-  const userId = await getCachedUserId();
+export async function getDashboardState(
+  authUserId?: string | null
+): Promise<DashboardState | null> {
+  const userId =
+    authUserId?.trim() || (await waitForBillingSessionUserId());
 
   if (!userId) {
     return null;
   }
 
-  const [homesResult, currentHomeId] = await Promise.all([
+  const [homesResult, currentHomeId, profileResult] = await Promise.all([
     supabase.from("homes").select("*").eq("user_id", userId),
     getCachedCurrentHomeId(userId),
+    getUserProfile(userId, userId),
   ]);
 
   if (homesResult.error) {
@@ -96,8 +108,21 @@ export async function getDashboardState(): Promise<DashboardState | null> {
   const { currentHomeId: resolvedHomeId, currentHome } =
     await reconcileDashboardHome(userId, homes, currentHomeId);
 
+  const plan = profileResult.ok ? profileResult.profile.plan : "free";
+  const exportCredits = profileResult.ok
+    ? profileResult.profile.export_credits
+    : 0;
+  const proIncludedExportUsed = profileResult.ok
+    ? profileResult.profile.pro_included_export_used
+    : false;
+  const storageBytesUsed = await getUserStorageBytesUsed(userId, plan);
+
   return {
     userId,
+    plan,
+    exportCredits,
+    proIncludedExportUsed,
+    storageBytesUsed,
     homes,
     currentHomeId: resolvedHomeId,
     currentHome,

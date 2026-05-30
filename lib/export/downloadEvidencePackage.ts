@@ -1,4 +1,11 @@
-import { buildEvidenceManifest } from "@/lib/export/buildManifest";
+import {
+  assertCanCreateHome,
+  assertCanCreateEvidenceLog,
+  assertCanAttachLogImages,
+  assertCanUploadStorageBytes,
+  assertCanExportEvidencePackage,
+} from "@/lib/billing/planEnforcement";
+import { consumeExportEntitlement } from "@/lib/billing/consumeExportEntitlement";
 import { formatExportFileStamp } from "@/lib/export/formatExportDate";
 import { gatherEvidencePackageContent } from "@/lib/export/gatherEvidencePackageContent";
 import { generateEvidenceReportPdf } from "@/lib/export/generateEvidenceReportPdf";
@@ -47,6 +54,11 @@ export async function downloadEvidencePackage(input: {
 
   try {
     reportProgress("gathering", "Gathering selected records…");
+
+    const exportEligibility = await assertCanExportEvidencePackage(input.userId);
+    if (!exportEligibility.ok) {
+      return exportEligibility;
+    }
 
     const selectedIds = getSelectedItemIds(input.inventory, input.selection);
     const contentResult = await gatherEvidencePackageContent({
@@ -132,6 +144,12 @@ export async function downloadEvidencePackage(input: {
 
     triggerBrowserDownload(archiveBlob, archiveName);
     reportProgress("done", "Download started.");
+
+    const consumeResult = await consumeExportEntitlement(exportEligibility.source);
+    if (!consumeResult.ok) {
+      return consumeResult;
+    }
+
     return { ok: true };
   } catch (error) {
     console.error("[export] download package", error);

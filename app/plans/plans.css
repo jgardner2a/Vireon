@@ -1,0 +1,245 @@
+.vireon-plans {
+  flex: 1 1 auto;
+  width: 100%;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.vireon-plans__inner {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  box-sizing: border-box;
+}
+
+.vireon-plans-hero {
+  padding: 16px 0 48px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vireon-plans-hero__eyebrow {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.vireon-plans-hero__title {
+  margin: 0;
+  max-width: 20ch;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.vireon-plans-hero__lead {
+  margin: 20px 0 0;
+  max-width: 42rem;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.vireon-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.vireon-plans-card {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.vireon-plans-card--featured {
+  border-color: #93c5fd;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 0 0 1px rgba(59, 130, 246, 0.08);
+}
+
+.vireon-plans-card__badge {
+  align-self: flex-start;
+  margin: 0 0 12px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+}
+
+.vireon-plans-card__name {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.vireon-plans-card__price {
+  margin: 8px 0 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.vireon-plans-card__price-note {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.vireon-plans-card__description {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.vireon-plans-card__features {
+  flex: 1 1 auto;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vireon-plans-card__features li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.vireon-plans-card__features li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.vireon-plans-card__features li.is-locked::before {
+  content: "—";
+  color: #94a3b8;
+}
+
+.vireon-plans-card__features li.is-locked {
+  color: #64748b;
+}
+
+.vireon-plans-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.vireon-plans-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.vireon-plans-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.vireon-plans-btn--primary {
+  color: #fff;
+  background: #0f172a;
+  border-color: #0f172a;
+}
+
+.vireon-plans-btn--primary:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #1e293b;
+}
+
+.vireon-plans-btn--secondary {
+  color: #0f172a;
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+.vireon-plans-btn--secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.vireon-plans-card__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+  text-align: center;
+}
+
+.vireon-plans-export {
+  margin-top: 40px;
+  padding: 28px 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.vireon-plans-export__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.vireon-plans-export__lead {
+  margin: 10px 0 0;
+  max-width: 40rem;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.vireon-plans-export__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.vireon-plans-export__price {
+  font-size: 1.25rem;
+  font-weight: 600;
+}

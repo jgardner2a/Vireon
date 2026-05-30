@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
+import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import { formatLogDate, previewDescription } from "@/lib/maintenance/format";
 import {
@@ -538,6 +539,8 @@ export default function MaintenancePage() {
           </button>
         </div>
       </header>
+
+      <PlanUsageHints variant="logs-only" refreshToken={logs.length} />
 
       {error && !modalOpen ? (
         <p className="maintenance-error" role="alert">

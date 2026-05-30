@@ -19,6 +19,10 @@ import {
   logSnapshotsSupabase,
 } from "@/lib/snapshots/supabaseErrors";
 import { getCachedUserId } from "@/lib/sessionCache";
+import {
+  assertCanAddSnapshotImages,
+  assertPlanFeature,
+} from "@/lib/billing/planEnforcement";
 import { supabase } from "@/lib/supabaseClient";
 
 type SnapshotRow = {
@@ -92,6 +96,11 @@ export async function createSnapshot(
   const userId = await getCachedUserId();
   if (!userId) {
     return { ok: false, message: "Not signed in." };
+  }
+
+  const featureCheck = await assertPlanFeature(userId, "snapshots");
+  if (!featureCheck.ok) {
+    return featureCheck;
   }
 
   const { data, error } = await supabase
@@ -290,6 +299,26 @@ export async function addSnapshotImages(
 > {
   if (galleryIds.length === 0) {
     return { ok: true, images: [] };
+  }
+
+  const userId = await getCachedUserId();
+  if (!userId) {
+    return { ok: false, message: "Not signed in." };
+  }
+
+  const featureCheck = await assertPlanFeature(userId, "snapshots");
+  if (!featureCheck.ok) {
+    return featureCheck;
+  }
+
+  const roomCheck = await assertCanAddSnapshotImages({
+    userId,
+    snapshotId,
+    room,
+    incomingCount: galleryIds.length,
+  });
+  if (!roomCheck.ok) {
+    return roomCheck;
   }
 
   const roomValue = normalizeOptionalText(room);

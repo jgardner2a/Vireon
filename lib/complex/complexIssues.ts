@@ -1,5 +1,6 @@
 import { cleanupAttachmentsAfterLogDelete } from "@/lib/attachments/logDeleteAttachmentCleanup";
 import { buildComplexIssueTitle } from "@/lib/complex/logConfig";
+import { assertCanCreateEvidenceLog } from "@/lib/billing/planEnforcement";
 import type {
   ComplexIssue,
   CreateComplexIssueInput,
@@ -69,6 +70,11 @@ export async function createComplexIssue(
 
   if (!description) {
     return { ok: false, message: "Please add a description." };
+  }
+
+  const planCheck = await assertCanCreateEvidenceLog(input.userId, input.homeId);
+  if (!planCheck.ok) {
+    return planCheck;
   }
 
   const title = buildComplexIssueTitle(input.category, input.issueType);

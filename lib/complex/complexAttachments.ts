@@ -1,4 +1,5 @@
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
+import { assertCanAttachLogImages } from "@/lib/billing/planEnforcement";
 import { uploadFilesToGallery } from "@/lib/gallery/uploadStorageFiles";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -76,6 +77,17 @@ export async function uploadComplexAttachments(
   const imageFiles = imageCheck.files;
   if (imageFiles.length === 0) {
     return { ok: true, storagePaths: [] };
+  }
+
+  const attachmentCheck = await assertCanAttachLogImages({
+    userId: input.userId,
+    homeId: input.homeId,
+    ownerType: "complex",
+    ownerId: input.complexIssueId,
+    incomingCount: imageFiles.length,
+  });
+  if (!attachmentCheck.ok) {
+    return attachmentCheck;
   }
 
   const galleryResult = await uploadFilesToGallery({

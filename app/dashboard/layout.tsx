@@ -10,19 +10,20 @@ import {
   ROUTE_DASHBOARD_COMMUNICATIONS,
   ROUTE_DASHBOARD_COMPLEX,
   ROUTE_DASHBOARD_GALLERY,
+  ROUTE_DASHBOARD_INSIGHTS,
   ROUTE_DASHBOARD_MAINTENANCE,
   ROUTE_DASHBOARD_MY_HOME,
   ROUTE_DASHBOARD_NOTES,
   ROUTE_DASHBOARD_SNAPSHOTS_PREFIX,
   ROUTE_DASHBOARD_VAULT,
 } from "@/lib/appNavigation";
-import {
-  DashboardProvider,
-  useDashboardState,
-} from "@/lib/dashboard/dashboardContext";
+import { isPlanFeatureEnabled, planSupportsPropertyHistory } from "@/lib/billing/planConfig";
+import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import { useAuthSession } from "@/lib/useAuthSession";
 import "./dashboard.css";
 import "./dashboard-split.css";
+import "./_components/plan-feature-gate.css";
+import "./_components/plan-usage-hints.css";
 
 function navLinkClass(active: boolean) {
   return active
@@ -55,10 +56,16 @@ function DashboardSidebarNav() {
   const communicationsActive = pathname === ROUTE_DASHBOARD_COMMUNICATIONS;
   const notesActive = pathname === ROUTE_DASHBOARD_NOTES;
   const vaultActive = pathname === ROUTE_DASHBOARD_VAULT;
+  const insightsActive = pathname === ROUTE_DASHBOARD_INSIGHTS;
 
   const snapshotsHref = state?.currentHomeId
     ? dashboardHomeSnapshotsPath(state.currentHomeId)
     : ROUTE_DASHBOARD_MY_HOME;
+  const plan = state?.plan ?? "free";
+  const snapshotsLocked = !isPlanFeatureEnabled(plan, "snapshots");
+  const vaultLocked = !isPlanFeatureEnabled(plan, "vault");
+  const insightsLocked = !isPlanFeatureEnabled(plan, "insights");
+  const showPropertyHistory = planSupportsPropertyHistory(plan);
 
   return (
     <>
@@ -93,6 +100,9 @@ function DashboardSidebarNav() {
                 className={navLinkClass(snapshotsActive)}
               >
                 Move-in/out Snapshots
+                {snapshotsLocked ? (
+                  <span className="plan-nav-lock">Pro</span>
+                ) : null}
               </Link>
               <Link
                 href={ROUTE_DASHBOARD_MAINTENANCE}
@@ -129,15 +139,25 @@ function DashboardSidebarNav() {
                 className={navLinkClass(vaultActive)}
               >
                 Vault
+                {vaultLocked ? <span className="plan-nav-lock">Pro</span> : null}
               </Link>
             </div>
           </div>
 
+          {showPropertyHistory ? (
+            <Link
+              href={`${ROUTE_DASHBOARD}#previous-homes`}
+              className={navLinkClass(previousHomesActive)}
+            >
+              Property History
+            </Link>
+          ) : null}
           <Link
-            href={`${ROUTE_DASHBOARD}#previous-homes`}
-            className={navLinkClass(previousHomesActive)}
+            href={ROUTE_DASHBOARD_INSIGHTS}
+            className={navLinkClass(insightsActive)}
           >
-            Property History
+            Insights
+            {insightsLocked ? <span className="plan-nav-lock">Pro</span> : null}
           </Link>
         </div>
       </nav>
@@ -176,9 +196,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <DashboardProvider>
-      <DashboardLayoutShell>{children}</DashboardLayoutShell>
-    </DashboardProvider>
-  );
+  return <DashboardLayoutShell>{children}</DashboardLayoutShell>;
 }

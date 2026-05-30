@@ -5,7 +5,9 @@ import {
 import type { DocumentType } from "@/lib/documents/documentConfig";
 import { createDocumentViewUrl } from "@/lib/documents/documentSignedUrl";
 import { prepareImageForUpload } from "@/lib/media/prepareImageForUpload";
+import { assertCanUploadDocumentBytes } from "@/lib/billing/planEnforcement";
 import type { HomeDocument, UploadHomeDocumentInput } from "@/lib/documents/types";
+import { getCachedUserId } from "@/lib/sessionCache";
 import { supabase } from "@/lib/supabaseClient";
 
 type DocumentRow = {
@@ -14,6 +16,7 @@ type DocumentRow = {
   type: string;
   file_name: string;
   storage_path: string;
+  file_size: number | null;
   created_at: string;
 };
 
@@ -28,6 +31,7 @@ function mapRow(row: DocumentRow): Omit<HomeDocument, "viewUrl"> | null {
     type: row.type,
     file_name: row.file_name,
     storage_path: row.storage_path,
+    file_size: Math.max(0, Number(row.file_size) || 0),
     created_at: row.created_at,
   };
 }
@@ -58,7 +62,7 @@ export async function fetchDocumentsForHome(
 ): Promise<{ ok: true; documents: HomeDocument[] } | { ok: false; message: string }> {
   const { data, error } = await supabase
     .from("documents")
-    .select("id, home_id, type, file_name, storage_path, created_at")
+    .select("id, home_id, type, file_name, storage_path, file_size, created_at")
     .eq("home_id", homeId)
     .order("created_at", { ascending: false });
 
@@ -115,7 +119,7 @@ export async function deleteAllDocumentsForHome(
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const { data, error } = await supabase
     .from("documents")
-    .select("id, home_id, type, file_name, storage_path, created_at")
+    .select("id, home_id, type, file_name, storage_path, file_size, created_at")
     .eq("home_id", homeId);
 
   if (error) {
@@ -143,6 +147,11 @@ export async function deleteAllDocumentsForHome(
 export async function uploadHomeDocument(
   input: UploadHomeDocumentInput
 ): Promise<{ ok: true; document: HomeDocument } | { ok: false; message: string }> {
+  const userId = await getCachedUserId();
+  if (!userId) {
+    return { ok: false, message: "Not signed in." };
+  }
+
   const isImageUpload = input.file.type.startsWith("image/");
   const prepared = isImageUpload
     ? await prepareImageForUpload(input.file)
@@ -156,6 +165,19 @@ export async function uploadHomeDocument(
   }
 
   const existing = existingResult.documents.find((doc) => doc.type === input.type);
+  const replaceBytes = existing
+    ? Math.max(0, Number(existing.file_size) || 0)
+    : 0;
+
+  const storageCheck = await assertCanUploadDocumentBytes({
+    userId,
+    incomingBytes: prepared.size,
+    replaceBytes,
+  });
+  if (!storageCheck.ok) {
+    return storageCheck;
+  }
+
   if (existing) {
     const removed = await deleteDocumentRecordAndStorage(existing);
     if (!removed.ok) {
@@ -185,8 +207,9 @@ export async function uploadHomeDocument(
       type: input.type,
       file_name: input.file.name,
       storage_path: storagePath,
+      file_size: prepared.size,
     })
-    .select("id, home_id, type, file_name, storage_path, created_at")
+    .select("id, home_id, type, file_name, storage_path, file_size, created_at")
     .single();
 
   if (insertError || !data) {

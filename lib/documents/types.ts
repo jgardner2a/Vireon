@@ -6,6 +6,7 @@ export type HomeDocument = {
   type: DocumentType;
   file_name: string;
   storage_path: string;
+  file_size: number | null;
   created_at: string;
   /** Signed URL from storage_path; not persisted. */
   viewUrl: string | null;

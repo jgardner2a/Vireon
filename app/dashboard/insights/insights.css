@@ -1,0 +1,25 @@
+.insights-header {
+  margin-bottom: 24px;
+}
+
+.insights-header .dashboard-subtitle {
+  margin: 0;
+}
+
+.insights-section {
+  margin-bottom: 20px;
+}
+
+.insights-card {
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.insights-placeholder {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}

@@ -1,5 +1,6 @@
 import { invalidateDashboardHomesCache } from "@/lib/dashboard/dashboardContext";
 import { getDashboardState } from "@/lib/dashboard/dashboardOrchestrator";
+import { assertCanCreateHome } from "@/lib/billing/planEnforcement";
 import {
   mapHomeRow,
   type Home,
@@ -174,6 +175,11 @@ export async function createHome(
     return { ok: false, message: "Please fill in all required fields." };
   }
 
+  const planCheck = await assertCanCreateHome(userId);
+  if (!planCheck.ok) {
+    return planCheck;
+  }
+
   const { data: inserted, error: insertError } = await supabase
     .from("homes")
     .insert({
@@ -239,6 +245,11 @@ export async function createAndActivateHome(
       ok: false,
       error: "Please fill in all required fields.",
     };
+  }
+
+  const planCheck = await assertCanCreateHome(userId);
+  if (!planCheck.ok) {
+    return { ok: false, error: planCheck.message };
   }
 
   const { data: inserted, error: insertError } = await supabase

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
+import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import {
   COMMUNICATION_CATEGORIES,
@@ -541,6 +542,11 @@ export default function CommunicationsPage() {
           </button>
         </div>
       </header>
+
+      <PlanUsageHints
+        variant="logs-only"
+        refreshToken={communications.length}
+      />
 
       {error && !modalOpen ? (
         <p className="communications-error" role="alert">

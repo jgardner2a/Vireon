@@ -56,6 +56,16 @@ export const termsOfService: LegalDocument = {
       ],
     },
     {
+      id: "fair-use-storage",
+      title: "Fair Use and Storage Limits",
+      paragraphs: [
+        "To keep the Service stable and fairly available, Vireon may enforce reasonable limits on storage, uploads, file size, and other usage based on your plan. Plan-specific limits may be shown in the Service (including your account settings).",
+        "Free and Pro accounts are for personal property documentation only, not general-purpose file storage, media hosting, or long-term archival.",
+        "We may take reasonable action—including refusing uploads, limiting storage, throttling usage, or temporarily restricting access—if we determine in good faith that use is excessive, automated, or inconsistent with normal use of the Service.",
+        "These measures are intended to protect the Service and fair access for all users.",
+      ],
+    },
+    {
       id: "exports",
       title: "Exports and Shared Materials",
       paragraphs: [

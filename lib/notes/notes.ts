@@ -4,6 +4,7 @@ import {
   normalizeCategory,
 } from "@/lib/notes/noteConfig";
 import type { CreateNoteInput, Note, UpdateNoteInput } from "@/lib/notes/types";
+import { assertCanCreateEvidenceLog } from "@/lib/billing/planEnforcement";
 import { supabase } from "@/lib/supabaseClient";
 
 type NoteRow = {
@@ -67,6 +68,11 @@ export async function createNote(
 
   if (!content) {
     return { ok: false, message: "Please add note content." };
+  }
+
+  const planCheck = await assertCanCreateEvidenceLog(input.userId, input.homeId);
+  if (!planCheck.ok) {
+    return planCheck;
   }
 
   const { data, error } = await supabase

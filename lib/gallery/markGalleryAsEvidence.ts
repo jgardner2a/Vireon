@@ -1,3 +1,4 @@
+import { assertCanAttachLogImages } from "@/lib/billing/planEnforcement";
 import { supabase } from "@/lib/supabaseClient";
 
 export type MarkGalleryAsEvidenceInput = {
@@ -55,24 +56,6 @@ export async function markGalleryAsEvidence(
 
   const row = galleryRow as GalleryEvidenceRow;
 
-  const { error: updateError } = await supabase
-    .from("gallery")
-    .update({
-      owner_type: input.ownerType,
-      owner_id: input.ownerId,
-    })
-    .eq("id", input.galleryId)
-    .eq("user_id", input.userId)
-    .eq("home_id", input.homeId);
-
-  if (updateError) {
-    console.error("[gallery] mark evidence update", updateError);
-    return {
-      ok: false,
-      message: updateError.message || "Could not mark image as evidence.",
-    };
-  }
-
   const { data: existingAttachment, error: existingError } = await supabase
     .from("attachments")
     .select("id")
@@ -91,7 +74,55 @@ export async function markGalleryAsEvidence(
   }
 
   if (existingAttachment) {
+    const { error: updateError } = await supabase
+      .from("gallery")
+      .update({
+        owner_type: input.ownerType,
+        owner_id: input.ownerId,
+      })
+      .eq("id", input.galleryId)
+      .eq("user_id", input.userId)
+      .eq("home_id", input.homeId);
+
+    if (updateError) {
+      console.error("[gallery] mark evidence update", updateError);
+      return {
+        ok: false,
+        message: updateError.message || "Could not mark image as evidence.",
+      };
+    }
+
     return { ok: true };
+  }
+
+  const limitResult = await assertCanAttachLogImages({
+    userId: input.userId,
+    homeId: input.homeId,
+    ownerType: input.ownerType,
+    ownerId: input.ownerId,
+    incomingCount: 1,
+  });
+
+  if (!limitResult.ok) {
+    return { ok: false, message: limitResult.message };
+  }
+
+  const { error: updateError } = await supabase
+    .from("gallery")
+    .update({
+      owner_type: input.ownerType,
+      owner_id: input.ownerId,
+    })
+    .eq("id", input.galleryId)
+    .eq("user_id", input.userId)
+    .eq("home_id", input.homeId);
+
+  if (updateError) {
+    console.error("[gallery] mark evidence update", updateError);
+    return {
+      ok: false,
+      message: updateError.message || "Could not mark image as evidence.",
+    };
   }
 
   const mimeType = row.mime_type || "image/jpeg";

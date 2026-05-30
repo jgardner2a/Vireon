@@ -3,6 +3,7 @@ import {
   DEFAULT_COMMUNICATION_CATEGORY,
   normalizeCommunicationCategory,
 } from "@/lib/communications/communicationConfig";
+import { assertCanCreateEvidenceLog } from "@/lib/billing/planEnforcement";
 import type {
   Communication,
   CreateCommunicationInput,
@@ -165,6 +166,11 @@ export async function createCommunication(
 
   if (!message) {
     return { ok: false, message: "Please add a message." };
+  }
+
+  const planCheck = await assertCanCreateEvidenceLog(auth.userId, input.homeId);
+  if (!planCheck.ok) {
+    return planCheck;
   }
 
   const { data, error } = await supabase

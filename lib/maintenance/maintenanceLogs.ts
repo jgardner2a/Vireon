@@ -1,5 +1,6 @@
 import { cleanupAttachmentsAfterLogDelete } from "@/lib/attachments/logDeleteAttachmentCleanup";
 import { invalidateDashboardSnapshot } from "@/lib/dashboard/dashboardSnapshotCache";
+import { assertCanCreateEvidenceLog } from "@/lib/billing/planEnforcement";
 import { buildMaintenanceLogTitle } from "@/lib/maintenance/logConfig";
 import type {
   CreateMaintenanceLogInput,
@@ -70,6 +71,11 @@ export async function createMaintenanceLog(
 
   if (!description) {
     return { ok: false, message: "Please add a description." };
+  }
+
+  const planCheck = await assertCanCreateEvidenceLog(input.userId, input.homeId);
+  if (!planCheck.ok) {
+    return planCheck;
   }
 
   const title = buildMaintenanceLogTitle(input.category, input.issueType);

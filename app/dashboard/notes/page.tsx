@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
+import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import {
   formatNoteDate,
@@ -466,6 +467,8 @@ export default function NotesPage() {
           </button>
         </div>
       </header>
+
+      <PlanUsageHints variant="logs-only" refreshToken={notes.length} />
 
       {error && !modalOpen ? (
         <p className="notes-error" role="alert">

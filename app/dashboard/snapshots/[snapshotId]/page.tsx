@@ -7,6 +7,7 @@ import {
   dashboardHomeSnapshotsPath,
   ROUTE_DASHBOARD_MY_HOME,
 } from "@/lib/appNavigation";
+import { PlanFeatureGate } from "@/app/dashboard/_components/PlanFeatureGate";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   formatSnapshotDate,
@@ -85,6 +86,18 @@ function formatRoomSummary(photoCount: number, issueCount: number): string {
 }
 
 export default function SnapshotPage() {
+  return (
+    <PlanFeatureGate
+      feature="snapshots"
+      title="Snapshot"
+      description="Move-in and move-out snapshot details for your property."
+    >
+      <SnapshotPageContent />
+    </PlanFeatureGate>
+  );
+}
+
+function SnapshotPageContent() {
   const params = useParams();
   const { state, loading: dashboardLoading } = useDashboardState();
   const [snapshot, setSnapshot] = useState<SnapshotWithDetails | null>(null);

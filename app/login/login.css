@@ -1,0 +1,484 @@
+/* Auth — split layout aligned with homepage / plans palette */
+
+.vireon-auth {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 100%;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.vireon-auth__layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 440px);
+  min-height: calc(100vh - var(--vireon-global-header-height));
+}
+
+.vireon-auth-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px clamp(24px, 5vw, 56px);
+  box-sizing: border-box;
+}
+
+.vireon-auth-panel--signin {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.vireon-auth-panel--signup {
+  background: linear-gradient(165deg, #eff6ff 0%, #f8fafc 48%, #f1f5f9 100%);
+  border-right: 1px solid #e2e8f0;
+}
+
+.vireon-auth-panel__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 28px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+.vireon-auth-panel--signin .vireon-auth-panel__mark {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.vireon-auth-panel--signup .vireon-auth-panel__mark {
+  color: #fff;
+  background: #0f172a;
+}
+
+.vireon-auth-panel__eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vireon-auth-panel--signin .vireon-auth-panel__eyebrow {
+  color: #94a3b8;
+}
+
+.vireon-auth-panel--signup .vireon-auth-panel__eyebrow {
+  color: #64748b;
+}
+
+.vireon-auth-panel__title {
+  margin: 0;
+  max-width: 14ch;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.vireon-auth-panel--signin .vireon-auth-panel__title {
+  color: #fff;
+}
+
+.vireon-auth-panel__lead {
+  margin: 16px 0 0;
+  max-width: 34ch;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.vireon-auth-panel--signin .vireon-auth-panel__lead {
+  color: #cbd5e1;
+}
+
+.vireon-auth-panel--signup .vireon-auth-panel__lead {
+  color: #475569;
+}
+
+.vireon-auth-panel__list {
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vireon-auth-panel__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.vireon-auth-panel--signin .vireon-auth-panel__list li {
+  color: #e2e8f0;
+}
+
+.vireon-auth-panel--signup .vireon-auth-panel__list li {
+  color: #334155;
+}
+
+.vireon-auth-panel__list-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.vireon-auth-panel--signin .vireon-auth-panel__list-icon {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.vireon-auth-panel--signup .vireon-auth-panel__list-icon {
+  color: #fff;
+  background: #0f172a;
+}
+
+.vireon-auth-panel__steps {
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vireon-auth-panel__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.vireon-auth-panel__step-num {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: #0f172a;
+  border-radius: 999px;
+}
+
+.vireon-auth-panel__step-body strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.vireon-auth-panel__step-body span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.vireon-auth-form-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px 56px;
+  box-sizing: border-box;
+}
+
+.vireon-auth-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 28px 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 12px 40px rgba(15, 23, 42, 0.06);
+}
+
+.vireon-auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 28px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 12px;
+}
+
+.vireon-auth-tabs__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #64748b;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vireon-auth-tabs__tab:hover {
+  color: #0f172a;
+}
+
+.vireon-auth-tabs__tab--active {
+  color: #0f172a;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.vireon-auth-form__header {
+  margin-bottom: 24px;
+}
+
+.vireon-auth-form__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.vireon-auth-form__subtitle {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.vireon-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.vireon-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vireon-auth-field__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.vireon-auth-field__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vireon-auth-field__input::placeholder {
+  color: #94a3b8;
+}
+
+.vireon-auth-field__input:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.vireon-auth-field__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.vireon-auth-alert {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+}
+
+.vireon-auth-legal {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+  text-align: center;
+}
+
+.vireon-auth-legal a {
+  color: #0f172a;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.vireon-auth-legal a:hover {
+  text-decoration: underline;
+}
+
+.vireon-auth-submit {
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #0f172a;
+  border: 1px solid #0f172a;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.vireon-auth-submit:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #1e293b;
+}
+
+.vireon-auth-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.vireon-auth-switch {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+  text-align: center;
+}
+
+.vireon-auth-switch a {
+  color: #0f172a;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.vireon-auth-switch a:hover {
+  text-decoration: underline;
+}
+
+.vireon-auth-back {
+  margin-top: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  text-decoration: none;
+}
+
+.vireon-auth-back:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.vireon-auth-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: calc(100vh - var(--vireon-global-header-height));
+  font-size: 14px;
+  color: #64748b;
+}
+
+.vireon-auth-loading__spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #0f172a;
+  border-radius: 999px;
+  animation: vireon-auth-spin 0.7s linear infinite;
+}
+
+@keyframes vireon-auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .vireon-auth__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .vireon-auth-panel {
+    padding: 36px 24px 32px;
+  }
+
+  .vireon-auth-panel__title {
+    max-width: none;
+  }
+
+  .vireon-auth-panel__lead {
+    max-width: none;
+  }
+
+  .vireon-auth-panel--signup {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .vireon-auth-panel--signin {
+    order: 2;
+    padding-top: 28px;
+    padding-bottom: 40px;
+  }
+
+  .vireon-auth-form-wrap {
+    order: 1;
+    padding-top: 32px;
+    padding-bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vireon-auth-card {
+    padding: 22px 20px 20px;
+    border-radius: 14px;
+  }
+
+  .vireon-auth-form-wrap {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

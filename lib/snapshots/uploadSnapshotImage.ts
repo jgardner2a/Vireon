@@ -1,5 +1,10 @@
 import { isEvidenceLogImageFile } from "@/lib/attachments/evidenceLogImageFiles";
 import {
+  assertCanAddSnapshotImages,
+  assertCanUploadStorageBytes,
+  assertPlanFeature,
+} from "@/lib/billing/planEnforcement";
+import {
   formatSnapshotsErrorMessage,
   logSnapshotsSupabase,
 } from "@/lib/snapshots/supabaseErrors";
@@ -112,8 +117,29 @@ export async function uploadSnapshotImage(
     return { ok: false, message: "Not signed in." };
   }
 
+  const featureCheck = await assertPlanFeature(userId, "snapshots");
+  if (!featureCheck.ok) {
+    return featureCheck;
+  }
+
   const { snapshot } = contextResult;
   const prepared = await prepareImageForUpload(file);
+
+  const roomCheck = await assertCanAddSnapshotImages({
+    userId,
+    snapshotId,
+    room,
+    incomingCount: 1,
+  });
+  if (!roomCheck.ok) {
+    return roomCheck;
+  }
+
+  const storageCheck = await assertCanUploadStorageBytes(userId, prepared.size);
+  if (!storageCheck.ok) {
+    return storageCheck;
+  }
+
   const fileName = snapshotStorageFileName(prepared.name);
   const path = storagePath(userId, snapshot.home_id, fileName);
   const timestamp = new Date().toISOString();

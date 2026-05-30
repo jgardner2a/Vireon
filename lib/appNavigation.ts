@@ -22,6 +22,8 @@ export const APP_TOP_NAV_ITEMS: AppTopNavItem[] = [
 
   { href: "/", label: "Home", exact: true },
 
+  { href: "/plans", label: "Plans" },
+
   { href: "/dashboard", label: "Dashboard" },
 
 ];
@@ -29,6 +31,8 @@ export const APP_TOP_NAV_ITEMS: AppTopNavItem[] = [
 
 
 export const ROUTE_HOME = "/";
+
+export const ROUTE_PLANS = "/plans";
 
 export const ROUTE_DASHBOARD = "/dashboard";
 export const ROUTE_DASHBOARD_MY_HOME = "/dashboard/my-home";
@@ -45,6 +49,8 @@ export const ROUTE_DASHBOARD_NOTES = "/dashboard/notes";
 export const ROUTE_DASHBOARD_COMMUNICATIONS = "/dashboard/communications";
 
 export const ROUTE_DASHBOARD_VAULT = "/dashboard/vault";
+
+export const ROUTE_DASHBOARD_INSIGHTS = "/dashboard/insights";
 
 export const ROUTE_DASHBOARD_SETTINGS = "/dashboard/settings";
 

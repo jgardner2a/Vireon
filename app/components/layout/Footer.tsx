@@ -1,11 +1,11 @@
 import Link from "next/link";
+import { FooterAccessLinks } from "@/app/components/PublicAuthLinks";
 import {
-  DEFAULT_SIGN_IN_REDIRECT,
-  loginHref,
   ROUTE_ACCOUNT_DELETION,
   ROUTE_DASHBOARD,
   ROUTE_DASHBOARD_SETTINGS,
   ROUTE_HOME,
+  ROUTE_PLANS,
   ROUTE_PRIVACY,
   ROUTE_TERMS,
 } from "@/lib/appNavigation";
@@ -13,6 +13,7 @@ import "./footer.css";
 
 const PRODUCT_LINKS = [
   { href: ROUTE_HOME, label: "Home" },
+  { href: ROUTE_PLANS, label: "Plans" },
   { href: ROUTE_DASHBOARD, label: "Dashboard" },
   { href: ROUTE_DASHBOARD_SETTINGS, label: "Settings" },
 ] as const;
@@ -69,24 +70,7 @@ export function GlobalFooter() {
 
         <div className="vireon-global-footer__col">
           <h2 className="vireon-global-footer__heading">Access</h2>
-          <ul className="vireon-global-footer__links">
-            <li>
-              <Link
-                href={loginHref(DEFAULT_SIGN_IN_REDIRECT)}
-                className="vireon-global-footer__link"
-              >
-                Sign In
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={loginHref(ROUTE_DASHBOARD, { signup: true })}
-                className="vireon-global-footer__link"
-              >
-                Get Started
-              </Link>
-            </li>
-          </ul>
+          <FooterAccessLinks />
         </div>
       </div>
 

@@ -1,4 +1,5 @@
-import { LEGAL_CONTACT_EMAIL, LEGAL_PRODUCT_NAME } from "@/lib/legal/config";import type { LegalDocument } from "@/lib/legal/types";
+import { LEGAL_CONTACT_EMAIL, LEGAL_PRODUCT_NAME } from "@/lib/legal/config";
+import type { LegalDocument } from "@/lib/legal/types";
 
 export const privacyPolicy: LegalDocument = {
   title: "Privacy Policy",
@@ -79,7 +80,8 @@ export const privacyPolicy: LegalDocument = {
       id: "account-deletion",
       title: "Account Deletion",
       paragraphs: [
-        "Users may delete their account through the Service where available or by contacting support.",
+        "Signed-in users may delete their account in Settings (linked from the site footer). Open Delete account, enter your current password, type DELETE to confirm, and complete the flow. Deletion removes your account credentials and associated data described in our Account Deletion Policy.",
+        "You may also contact support to request account deletion if you cannot access the Service.",
         "Upon account deletion, Vireon will delete or de-identify account information, records, uploaded files, and associated data, subject to reasonable backup retention periods, legal obligations, fraud prevention requirements, and technical recovery processes.",
         "Some information may remain in secure backups for a limited period before permanent removal.",
       ],
@@ -91,7 +93,7 @@ export const privacyPolicy: LegalDocument = {
       listItems: [
         "Access, correct, or delete information associated with your account.",
         "Export your documentation through features provided in the Service.",
-        "Close your account and request deletion of associated data.",
+        "Close your account and delete associated data through Settings or as described in our Account Deletion Policy.",
         "Withdraw consent where processing is based on consent, subject to legal limits.",
       ],
       afterListParagraphs: [

@@ -7,6 +7,7 @@ import {
   dashboardSnapshotDetailPath,
   ROUTE_DASHBOARD_MY_HOME,
 } from "@/lib/appNavigation";
+import { PlanFeatureGate } from "@/app/dashboard/_components/PlanFeatureGate";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   formatSnapshotDate,
@@ -89,6 +90,18 @@ function SnapshotSection({
 }
 
 export default function HomeSnapshotsPage() {
+  return (
+    <PlanFeatureGate
+      feature="snapshots"
+      title="Snapshots"
+      description="Move-in and move-out snapshot records for your property."
+    >
+      <HomeSnapshotsPageContent />
+    </PlanFeatureGate>
+  );
+}
+
+function HomeSnapshotsPageContent() {
   const params = useParams();
   const router = useRouter();
   const { state, loading: dashboardLoading } = useDashboardState();

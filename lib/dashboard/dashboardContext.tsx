@@ -39,7 +39,7 @@ type DashboardContextValue = {
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const { userId: authUserId } = useAuthSession();
+  const { userId: authUserId, isLoading: isAuthLoading } = useAuthSession();
   const [state, setState] = useState<DashboardState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +50,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) {
+      return;
+    }
+
+    if (!authUserId) {
+      setState(null);
+      setError("Not signed in.");
+      setLoading(false);
       return;
     }
 
@@ -64,7 +71,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       }
 
       if (!homesLoadedRef.current) {
-        const next = await getDashboardState();
+        const next = await getDashboardState(authUserId);
 
         if (!next) {
           setState(null);
@@ -98,12 +105,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         pointerHomeId
       );
 
-      setState({
+      setState((previous) => ({
         userId,
+        plan: previous?.plan ?? "free",
+        exportCredits: previous?.exportCredits ?? 0,
+        proIncludedExportUsed: previous?.proIncludedExportUsed ?? false,
+        storageBytesUsed: previous?.storageBytesUsed ?? 0,
         homes,
         currentHomeId,
         currentHome,
-      });
+      }));
     } catch (err) {
       setState(null);
       setError(
@@ -115,16 +126,32 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       refreshInFlightRef.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [authUserId]);
 
   useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (!authUserId) {
+      setState(null);
+      setError("Not signed in.");
+      setLoading(false);
+      return;
+    }
+
     void refresh();
-  }, [refresh]);
+  }, [refresh, isAuthLoading, authUserId]);
 
   useEffect(() => {
     const userId = authUserId;
 
-    if (userId && previousUserIdRef.current !== userId) {
+    if (!userId || previousUserIdRef.current === null) {
+      previousUserIdRef.current = userId;
+      return;
+    }
+
+    if (previousUserIdRef.current !== userId) {
       homesCacheRef.current = [];
       homesLoadedRef.current = false;
       setState(null);
@@ -140,6 +167,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       {children}
     </DashboardContext.Provider>
   );
+}
+
+export function useOptionalDashboardState(): DashboardContextValue | null {
+  return useContext(DashboardContext);
 }
 
 export function useDashboardState(): DashboardContextValue {

@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
+import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import {
   getValidCachedSignedUrl,
   invalidateSignedUrlCache,
@@ -755,7 +756,7 @@ function GalleryFolderSidebar({
 }
 
 export default function GalleryPage() {
-  const { state } = useDashboardState();
+  const { state, refresh } = useDashboardState();
   const [allPaths, setAllPaths] = useState<string[]>([]);
   const [cachedFiles, setCachedFiles] = useState<GalleryFile[]>([]);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -2032,11 +2033,14 @@ export default function GalleryPage() {
     invalidateSignedUrlCache(userId, homeId);
     setUploading(false);
     await loadInitial();
+    await refresh();
   };
 
   return (
     <div className="dashboard-container gallery-page">
       <h1 className="dashboard-title">Gallery</h1>
+
+      <PlanUsageHints variant="storage-only" />
 
       {error ? (
         <p className="gallery-error" role="alert">

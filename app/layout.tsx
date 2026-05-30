@@ -1,5 +1,4 @@
-import { AppLayout } from "./components/layout/AppLayout";
-import { GlobalHeader } from "./components/GlobalHeader";
+import { AppShell } from "./components/AppShell";
 import "./globals.css";
 
 export default function RootLayout({
@@ -10,8 +9,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <GlobalHeader />
-        <AppLayout>{children}</AppLayout>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
