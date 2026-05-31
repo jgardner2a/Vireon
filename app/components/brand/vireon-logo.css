@@ -1,0 +1,51 @@
+.vireon-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--vireon-ink);
+  flex-shrink: 0;
+}
+
+.vireon-logo:hover {
+  color: var(--vireon-forest);
+}
+
+.vireon-logo__mark {
+  flex-shrink: 0;
+  display: block;
+}
+
+.vireon-logo__mark--sm {
+  width: 28px;
+  height: 28px;
+}
+
+.vireon-logo__mark--md {
+  width: 34px;
+  height: 34px;
+}
+
+.vireon-logo__mark--lg {
+  width: 44px;
+  height: 44px;
+}
+
+.vireon-logo__wordmark {
+  font-family: var(--vireon-font-sans);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.vireon-logo__wordmark--sm {
+  font-size: 15px;
+}
+
+.vireon-logo__wordmark--md {
+  font-size: 17px;
+}
+
+.vireon-logo__wordmark--lg {
+  font-size: 22px;
+}

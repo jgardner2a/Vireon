@@ -15,7 +15,8 @@ export type DashboardState = {
   plan: PlanTier;
   exportCredits: number;
   proIncludedExportUsed: boolean;
-  storageBytesUsed: number;
+  /** Null when usage could not be loaded (upload pre-checks fail closed). */
+  storageBytesUsed: number | null;
   homes: Home[];
   currentHomeId: string | null;
   currentHome: Home | null;
@@ -96,13 +97,13 @@ export async function reloadDashboardBillingFields(
   const proIncludedExportUsed = profileResult.ok
     ? profileResult.profile.pro_included_export_used
     : false;
-  const storageBytesUsed = await getUserStorageBytesUsed(userId, plan);
+  const storageResult = await getUserStorageBytesUsed(userId, plan);
 
   return {
     plan,
     exportCredits,
     proIncludedExportUsed,
-    storageBytesUsed,
+    storageBytesUsed: storageResult.ok ? storageResult.value : null,
   };
 }
 
@@ -142,14 +143,14 @@ export async function getDashboardState(
   const proIncludedExportUsed = profileResult.ok
     ? profileResult.profile.pro_included_export_used
     : false;
-  const storageBytesUsed = await getUserStorageBytesUsed(userId, plan);
+  const storageResult = await getUserStorageBytesUsed(userId, plan);
 
   return {
     userId,
     plan,
     exportCredits,
     proIncludedExportUsed,
-    storageBytesUsed,
+    storageBytesUsed: storageResult.ok ? storageResult.value : null,
     homes,
     currentHomeId: resolvedHomeId,
     currentHome,

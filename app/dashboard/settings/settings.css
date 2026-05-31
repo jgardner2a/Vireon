@@ -20,14 +20,14 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .settings-card {
   padding: 20px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 }
 
 .settings-field {
@@ -49,11 +49,11 @@
 }
 
 .settings-status--verified {
-  color: #166534;
+  color: var(--vireon-success-text);
 }
 
 .settings-status--pending {
-  color: #92400e;
+  color: var(--vireon-warning-text);
 }
 
 .settings-plan-row {
@@ -70,15 +70,15 @@
 }
 
 .settings-plan-badge--free {
-  color: #444;
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink-muted);
+  background: var(--vireon-surface);
+  border: 1px solid var(--vireon-border);
 }
 
 .settings-plan-badge--pro {
-  color: #1e3a8a;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: var(--vireon-pro-text);
+  background: var(--vireon-pro-bg);
+  border: 1px solid var(--vireon-pro-border);
 }
 
 .settings-usage-header {
@@ -97,19 +97,19 @@
 .settings-usage-summary {
   font-size: 13px;
   font-weight: 500;
-  color: #444;
+  color: var(--vireon-ink-secondary);
 }
 
 .settings-usage-bar {
   height: 8px;
   overflow: hidden;
-  background: #f0f0f0;
+  background: var(--vireon-surface-alt);
   border-radius: 999px;
 }
 
 .settings-usage-fill {
   height: 100%;
-  background: #111;
+  background: var(--vireon-primary);
   border-radius: 999px;
   transition: width 0.2s ease;
 }
@@ -123,7 +123,7 @@
 .settings-summary-line {
   margin: 0 0 6px;
   font-size: 14px;
-  color: #111;
+  color: var(--vireon-ink);
   line-height: 1.5;
 }
 
@@ -134,15 +134,15 @@
 .settings-confirm-panel {
   margin-top: 16px;
   padding: 16px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .settings-confirm-copy {
   margin: 0 0 12px;
   font-size: 14px;
-  color: #444;
+  color: var(--vireon-ink-secondary);
   line-height: 1.5;
 }
 
@@ -151,28 +151,28 @@
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .settings-field-value {
   margin: 0;
   font-size: 15px;
   font-weight: 500;
-  color: #111;
+  color: var(--vireon-ink);
   word-break: break-word;
 }
 
 .settings-field-hint {
   margin: 8px 0 0;
   font-size: 13px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.5;
 }
 
 .settings-divider {
   margin: 20px 0;
   border: none;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--vireon-border-subtle);
 }
 
 .settings-actions {
@@ -187,10 +187,10 @@
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 500;
-  color: #111;
+  color: var(--vireon-ink);
   text-decoration: none;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
+  background: var(--vireon-surface);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
 }
 
@@ -205,27 +205,27 @@ button.settings-link-btn:disabled {
 }
 
 .settings-link-btn:hover {
-  background: #f0f0f0;
+  background: var(--vireon-surface-alt);
 }
 
 .settings-danger-zone {
   padding: 20px;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--vireon-error-border);
   border-radius: 12px;
-  background: #fef2f2;
+  background: var(--vireon-error-bg);
 }
 
 .settings-danger-title {
   margin: 0 0 8px;
   font-size: 15px;
   font-weight: 600;
-  color: #991b1b;
+  color: var(--vireon-error-hover);
 }
 
 .settings-danger-copy {
   margin: 0;
   font-size: 14px;
-  color: #7f1d1d;
+  color: var(--vireon-error-hover);
   line-height: 1.5;
 }
 
@@ -240,15 +240,15 @@ button.settings-link-btn:disabled {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: #b91c1c;
+  color: var(--vireon-on-primary);
+  background: var(--vireon-error);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .settings-btn-danger:hover {
-  background: #991b1b;
+  background: var(--vireon-error-hover);
 }
 
 .settings-btn-danger:disabled {
@@ -264,7 +264,7 @@ button.settings-link-btn:disabled {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(17, 17, 17, 0.45);
+  background: rgba(15, 61, 48, 0.45);
   box-sizing: border-box;
 }
 
@@ -274,21 +274,21 @@ button.settings-link-btn:disabled {
   overflow: auto;
   padding: 24px;
   border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  background: var(--vireon-surface-elevated);
+  box-shadow: var(--vireon-shadow-brand);
 }
 
 .settings-modal-title {
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .settings-modal-copy {
   margin: 0 0 16px;
   font-size: 14px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.5;
 }
 
@@ -301,22 +301,22 @@ button.settings-link-btn:disabled {
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #444;
+  color: var(--vireon-ink-secondary);
 }
 
 .settings-modal-field input {
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
-  color: #111;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   box-sizing: border-box;
 }
 
 .settings-modal-field input:disabled {
-  color: #888;
+  color: var(--vireon-ink-faint);
   cursor: not-allowed;
 }
 
@@ -324,10 +324,10 @@ button.settings-link-btn:disabled {
   margin: 0 0 16px;
   padding: 12px 14px;
   font-size: 13px;
-  color: #92400e;
+  color: var(--vireon-warning-text);
   line-height: 1.5;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  background: var(--vireon-warning-bg);
+  border: 1px solid var(--vireon-warning-border);
   border-radius: 8px;
 }
 
@@ -343,15 +343,15 @@ button.settings-link-btn:disabled {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #111;
-  background: #fff;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .settings-btn-secondary:hover {
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .settings-form {
@@ -370,7 +370,7 @@ button.settings-link-btn:disabled {
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #444;
+  color: var(--vireon-ink-secondary);
 }
 
 .settings-form-field input {
@@ -378,15 +378,15 @@ button.settings-link-btn:disabled {
   max-width: 360px;
   padding: 10px 12px;
   font-size: 14px;
-  color: #111;
-  background: #fafafa;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   box-sizing: border-box;
 }
 
 .settings-form-field input:disabled {
-  color: #888;
+  color: var(--vireon-ink-faint);
   cursor: not-allowed;
 }
 
@@ -401,15 +401,15 @@ button.settings-link-btn:disabled {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: #111;
+  color: var(--vireon-on-primary);
+  background: var(--vireon-primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .settings-btn-primary:hover:not(:disabled) {
-  background: #333;
+  background: var(--vireon-primary-hover);
 }
 
 .settings-btn-primary:disabled {
@@ -424,11 +424,11 @@ button.settings-link-btn:disabled {
 }
 
 .settings-form-message--error {
-  color: #b91c1c;
+  color: var(--vireon-error);
 }
 
 .settings-form-message--success {
-  color: #166534;
+  color: var(--vireon-success-text);
 }
 
 .settings-properties {
@@ -442,7 +442,7 @@ button.settings-link-btn:disabled {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -453,8 +453,8 @@ button.settings-link-btn:disabled {
   justify-content: space-between;
   gap: 16px;
   padding: 16px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
+  background: var(--vireon-surface-elevated);
+  border-top: 1px solid var(--vireon-border-subtle);
 }
 
 .settings-property-row:first-child {
@@ -469,14 +469,14 @@ button.settings-link-btn:disabled {
   margin: 0 0 4px;
   font-size: 15px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .settings-property-address,
 .settings-property-meta {
   margin: 0;
   font-size: 13px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.5;
 }
 

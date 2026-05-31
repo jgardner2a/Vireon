@@ -20,18 +20,18 @@
   display: inline-block;
   margin-bottom: 12px;
   font-size: 14px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   text-decoration: none;
 }
 
 .snapshot-header-back:hover {
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .snapshot-error {
   margin: 0 0 16px;
   font-size: 13px;
-  color: #b91c1c;
+  color: var(--vireon-error);
   line-height: 1.4;
 }
 
@@ -64,15 +64,15 @@
 
 .snapshot-room-card {
   padding: 0;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
   overflow: hidden;
 }
 
 .snapshot-room-card--selected {
-  border-color: #111;
-  box-shadow: 0 0 0 2px #111;
+  border-color: var(--vireon-primary);
+  box-shadow: 0 0 0 2px var(--vireon-primary);
 }
 
 .snapshot-room-card-hit {
@@ -95,11 +95,11 @@
 }
 
 .snapshot-room-card-hit:hover {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .snapshot-room-card-hit:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: -2px;
 }
 
@@ -114,7 +114,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
   line-height: 1.25;
 }
 
@@ -125,7 +125,7 @@
 .snapshot-room-card-count {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.4;
 }
 
@@ -154,10 +154,10 @@
   width: 40px;
   height: 40px;
   margin: 0;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 6px;
   overflow: hidden;
-  background: #f5f5f5;
+  background: var(--vireon-surface-alt);
 }
 
 .snapshot-room-card-preview-img {
@@ -178,10 +178,10 @@
   padding: 14px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #111;
+  color: var(--vireon-ink);
   text-align: center;
-  background: #fff;
-  border: 1px dashed #ccc;
+  background: var(--vireon-surface-elevated);
+  border: 1px dashed var(--vireon-border);
   border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
@@ -223,12 +223,12 @@
 }
 
 .snapshot-add-room-btn:hover {
-  border-color: #999;
-  background: #f9fafb;
+  border-color: var(--vireon-ink-faint);
+  background: var(--vireon-surface);
 }
 
 .snapshot-add-room-btn:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: 2px;
 }
 
@@ -243,15 +243,15 @@
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #111;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .snapshot-room-action-btn:hover:not(:disabled) {
-  border-color: #999;
+  border-color: var(--vireon-ink-faint);
 }
 
 .snapshot-room-action-btn:disabled {
@@ -272,10 +272,10 @@
   width: 72px;
   height: 72px;
   margin: 0;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   overflow: hidden;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 }
 
 .snapshot-detail-photo-img {
@@ -310,9 +310,9 @@
   max-height: 90vh;
   overflow-y: auto;
   padding: 20px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 16px 16px 12px 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
@@ -332,7 +332,7 @@
 .snapshot-issue-modal-subtitle {
   margin: 0 0 20px;
   font-size: 13px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.4;
 }
 
@@ -352,22 +352,22 @@
   gap: 10px;
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--vireon-border-subtle);
 }
 
 .snapshot-issue-modal-btn-secondary {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .snapshot-issue-modal-btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .snapshot-issue-modal-btn-secondary:disabled {
@@ -384,7 +384,7 @@
   margin-bottom: 4px;
   font-size: 13px;
   font-weight: 500;
-  color: #444;
+  color: var(--vireon-ink-secondary);
 }
 
 .snapshot-field input,
@@ -395,7 +395,7 @@
   max-width: 480px;
   padding: 8px 10px;
   font-size: 14px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   font-family: inherit;
 }
@@ -413,7 +413,7 @@
 
 .snapshot-issue {
   padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--vireon-border-subtle);
 }
 
 .snapshot-issue:last-child {
@@ -424,19 +424,19 @@
   margin: 0 0 2px;
   font-size: 14px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .snapshot-issue-meta {
   margin: 0;
   font-size: 12px;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .snapshot-issue-notes {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #333;
+  color: var(--vireon-ink-secondary);
   line-height: 1.45;
   white-space: pre-wrap;
 }
@@ -444,7 +444,7 @@
 .snapshot-empty {
   margin: 0;
   font-size: 14px;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .snapshot-hidden-file-input {

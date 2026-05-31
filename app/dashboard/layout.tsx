@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { VireonLogo } from "@/app/components/brand/VireonLogo";
 import {
   dashboardHomeSnapshotsPath,
   loginHref,
@@ -21,9 +22,10 @@ import { isPlanFeatureEnabled, planSupportsPropertyHistory } from "@/lib/billing
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import { useAuthSession } from "@/lib/useAuthSession";
 import "./dashboard.css";
+import "./dashboard-theme.css";
+import "./dashboard-alerts.css";
 import "./dashboard-split.css";
 import "./_components/plan-feature-gate.css";
-import "./_components/plan-usage-hints.css";
 
 function navLinkClass(active: boolean) {
   return active
@@ -69,9 +71,7 @@ function DashboardSidebarNav() {
 
   return (
     <>
-      <Link href={ROUTE_DASHBOARD} className="dashboard-brand">
-        Vireon
-      </Link>
+      <VireonLogo size="md" href={ROUTE_DASHBOARD} className="dashboard-brand" />
 
       <p className="dashboard-nav-label">Menu</p>
       <nav className="dashboard-nav" aria-label="Dashboard">

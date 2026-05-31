@@ -1,13 +1,12 @@
-/* Global footer — calm, structured, renter-focused */
+/* Global footer — Vireon Forest & Stone */
 
 .vireon-global-footer {
   flex-shrink: 0;
   width: 100%;
   margin-top: auto;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+  background: var(--vireon-footer-bg);
+  border-top: 1px solid var(--vireon-footer-border);
+  font-family: var(--vireon-font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -26,38 +25,14 @@
 }
 
 .vireon-global-footer__brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   margin-bottom: 12px;
-}
-
-.vireon-global-footer__mark {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.vireon-global-footer__name {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: #0f172a;
 }
 
 .vireon-global-footer__tagline {
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-global-footer__heading {
@@ -66,7 +41,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--vireon-ink-faint);
 }
 
 .vireon-global-footer__links,
@@ -82,29 +57,29 @@
 .vireon-global-footer__link {
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
+  color: var(--vireon-ink-secondary);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .vireon-global-footer__link:hover {
-  color: #0f172a;
+  color: var(--vireon-forest);
 }
 
 .vireon-global-footer__list-plain li {
   font-size: 14px;
   line-height: 1.45;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-global-footer__text-muted {
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--vireon-ink-faint);
 }
 
 .vireon-global-footer__bar {
-  border-top: 1px solid #e2e8f0;
-  background: #fff;
+  border-top: 1px solid var(--vireon-footer-border);
+  background: var(--vireon-footer-bar-bg);
   padding: 14px 24px;
   text-align: center;
 }
@@ -113,10 +88,9 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.4;
-  color: #94a3b8;
+  color: var(--vireon-ink-faint);
 }
 
-/* Align footer with main column when a fixed workspace sidebar is present */
 .vireon-app-body:has(.vireon-workspace-shell) > .vireon-global-footer {
   margin-left: var(--vireon-workspace-sidebar-width, 264px);
   width: calc(100% - var(--vireon-workspace-sidebar-width, 264px));

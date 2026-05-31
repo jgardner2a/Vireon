@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { billingErrorMessage } from "@/lib/billing/logBillingError";
 import { resolveExportEligibility } from "@/lib/billing/planEnforcement";
 import { getSupabaseAdmin } from "@/lib/supabase/adminClient";
 import type { ExportEntitlementSource } from "@/lib/billing/types";
@@ -72,9 +73,27 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (profileError || !profile) {
+    if (profileError) {
+      console.error("[billing] consume-export profile read", {
+        userId: user.id,
+        error: profileError,
+      });
       return NextResponse.json(
-        { ok: false, message: "Could not load your plan." },
+        { ok: false, message: billingErrorMessage(profileError) },
+        { status: 500 }
+      );
+    }
+
+    if (!profile) {
+      console.error("[billing] consume-export profile missing", {
+        userId: user.id,
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "Could not load your plan on the server. Check that SUPABASE_SERVICE_ROLE_KEY in .env.local is the service_role secret (not the anon key) for the same project as NEXT_PUBLIC_SUPABASE_URL, then restart the dev server.",
+        },
         { status: 500 }
       );
     }

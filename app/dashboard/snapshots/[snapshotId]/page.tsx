@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,6 +33,7 @@ import {
 } from "@/lib/snapshots/snapshotDisplay";
 import { addSnapshotIssue, getSnapshot } from "@/lib/snapshots/snapshots";
 import { uploadSnapshotImage } from "@/lib/snapshots/uploadSnapshotImage";
+import { assertCanStageSnapshotRoomImages } from "@/lib/billing/planLimitStaging";
 import type { SnapshotIssue, SnapshotSeverity, SnapshotWithDetails } from "@/lib/snapshots/types";
 import "../snapshots.css";
 
@@ -308,10 +310,27 @@ function SnapshotPageContent() {
     }
 
     const roomSlug = uploadTargetRoomRef.current;
+    const fileArray = Array.from(files);
+
+    const stageCheck = assertCanStageSnapshotRoomImages({
+      plan: state?.plan ?? "free",
+      existingCount: displayImages.filter((image) => image.roomSlug === roomSlug)
+        .length,
+      incomingCount: fileArray.length,
+    });
+
+    if (!stageCheck.ok) {
+      setError(stageCheck.message);
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+      return;
+    }
+
     setUploadingRoom(roomSlug);
     setError(null);
 
-    for (const file of Array.from(files)) {
+    for (const file of fileArray) {
       const result = await uploadSnapshotImage(snapshot.id, file, roomSlug);
 
       if (!result.ok) {
@@ -447,7 +466,7 @@ function SnapshotPageContent() {
     return (
       <div className="dashboard-container">
         <h1 className="dashboard-title">Snapshot</h1>
-        <p className="gallery-error">Invalid snapshot link.</p>
+        <DashboardAlert message="Invalid snapshot link." />
       </div>
     );
   }
@@ -456,9 +475,7 @@ function SnapshotPageContent() {
     return (
       <div className="dashboard-container">
         <h1 className="dashboard-title">Snapshot</h1>
-        <p className="gallery-error" role="alert">
-          {error ?? "Snapshot not found."}
-        </p>
+        <DashboardAlert message={error ?? "Snapshot not found."} />
         <Link href={ROUTE_DASHBOARD_MY_HOME} style={{ fontSize: 14, color: "#111" }}>
           Back to My Home
         </Link>
@@ -488,9 +505,7 @@ function SnapshotPageContent() {
       </header>
 
       {error && !anyModalOpen ? (
-        <p className="snapshot-error" role="alert">
-          {error}
-        </p>
+        <DashboardAlert message={error} />
       ) : null}
 
       <input
@@ -745,9 +760,7 @@ function SnapshotPageContent() {
               </div>
 
               {error ? (
-                <p className="snapshot-error" role="alert">
-                  {error}
-                </p>
+                <DashboardAlert message={error} />
               ) : null}
 
               <div className="snapshot-issue-modal-actions">
@@ -849,9 +862,7 @@ function SnapshotPageContent() {
               </div>
 
               {error ? (
-                <p className="snapshot-error" role="alert">
-                  {error}
-                </p>
+                <DashboardAlert message={error} />
               ) : null}
 
               <div className="snapshot-issue-modal-actions">

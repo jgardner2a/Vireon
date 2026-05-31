@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { VireonLogo } from "@/app/components/brand/VireonLogo";
 import { FooterAccessLinks } from "@/app/components/PublicAuthLinks";
 import {
   ROUTE_ACCOUNT_DELETION,
@@ -32,10 +33,7 @@ export function GlobalFooter() {
       <div className="vireon-global-footer__grid">
         <div className="vireon-global-footer__col">
           <div className="vireon-global-footer__brand">
-            <span className="vireon-global-footer__mark" aria-hidden>
-              V
-            </span>
-            <span className="vireon-global-footer__name">Vireon</span>
+            <VireonLogo size="sm" href={ROUTE_HOME} />
           </div>
           <p className="vireon-global-footer__tagline">
             Property documentation and recordkeeping for residents.

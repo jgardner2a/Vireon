@@ -23,14 +23,14 @@
 .complex-error {
   margin: 0 0 16px;
   font-size: 13px;
-  color: #b91c1c;
+  color: var(--vireon-error);
   line-height: 1.4;
 }
 
 .complex-empty {
   margin-top: 24px;
   padding: 24px;
-  border: 1px dashed #ddd;
+  border: 1px dashed var(--vireon-border);
   border-radius: 12px;
   text-align: center;
 }
@@ -49,9 +49,9 @@
   flex-direction: column;
   gap: 0;
   padding: 0;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
   overflow: hidden;
 }
 
@@ -70,11 +70,11 @@
 }
 
 .complex-card-hit:hover {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .complex-card-hit:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: -2px;
 }
 
@@ -89,19 +89,19 @@
 }
 
 .complex-card--active {
-  border-color: #111;
-  background: #fafafa;
+  border-color: var(--vireon-primary);
+  background: var(--vireon-surface);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 .complex-card--selected {
-  border-color: #111;
-  box-shadow: 0 0 0 2px #111;
+  border-color: var(--vireon-primary);
+  box-shadow: 0 0 0 2px var(--vireon-primary);
 }
 
 .complex-card--resolved {
   opacity: 0.72;
-  background: #fcfcfc;
+  background: var(--vireon-surface);
 }
 
 .complex-card-top {
@@ -117,7 +117,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .complex-card-meta {
@@ -126,7 +126,7 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .complex-badge {
@@ -140,13 +140,13 @@
 }
 
 .complex-badge--active {
-  color: #111;
-  background: #e8e8e8;
+  color: var(--vireon-ink);
+  background: var(--vireon-border-subtle);
 }
 
 .complex-badge--resolved {
-  color: #444;
-  background: #f0f0f0;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-alt);
 }
 
 .complex-card-category {
@@ -156,7 +156,7 @@
 .complex-card-description {
   margin: 0;
   font-size: 14px;
-  color: #444;
+  color: var(--vireon-ink-secondary);
   line-height: 1.5;
 }
 
@@ -185,9 +185,9 @@
   max-height: 90vh;
   overflow-y: auto;
   padding: 20px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 16px 16px 12px 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
@@ -207,7 +207,7 @@
 .complex-modal-subtitle {
   margin: 0 0 20px;
   font-size: 13px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.4;
 }
 
@@ -223,7 +223,7 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #333;
+  color: var(--vireon-ink-secondary);
 }
 
 .complex-field select,
@@ -232,10 +232,10 @@
   padding: 10px 12px;
   font-size: 14px;
   font-family: inherit;
-  border: 1px solid #ddd;
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 }
 
 .complex-field textarea {
@@ -267,7 +267,7 @@
 .complex-attachments-hint {
   margin: 6px 0 0;
   font-size: 12px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.4;
 }
 
@@ -285,8 +285,8 @@
   height: 72px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #ddd;
-  background: #f5f5f5;
+  border: 1px solid var(--vireon-border);
+  background: var(--vireon-surface-alt);
 }
 
 .complex-attachment-pending {
@@ -294,7 +294,7 @@
   padding: 0;
   list-style: none;
   font-size: 12px;
-  color: #444;
+  color: var(--vireon-ink-secondary);
 }
 
 .complex-attachment-pending li {
@@ -307,22 +307,22 @@
   gap: 10px;
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--vireon-border-subtle);
 }
 
 .complex-btn-secondary {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .complex-btn-secondary:hover {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .complex-btn-secondary:disabled {
@@ -338,7 +338,7 @@
   padding: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #b91c1c;
+  color: var(--vireon-error);
   background: none;
   border: none;
   cursor: pointer;
@@ -347,7 +347,7 @@
 }
 
 .complex-btn-danger-ghost:hover {
-  color: #991b1b;
+  color: var(--vireon-error-hover);
 }
 
 .complex-btn-danger-ghost:disabled {
@@ -371,9 +371,9 @@
   width: 100%;
   max-width: 400px;
   padding: 24px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
 }
 
@@ -386,7 +386,7 @@
 .complex-confirm-message {
   margin: 0 0 20px;
   font-size: 14px;
-  color: #444;
+  color: var(--vireon-ink-secondary);
   line-height: 1.5;
 }
 
@@ -397,22 +397,22 @@
 }
 
 .complex-confirm-cancel {
-  background: #111;
+  background: var(--vireon-primary);
 }
 
 .complex-btn-danger {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: #b91c1c;
+  color: var(--vireon-on-primary);
+  background: var(--vireon-error);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .complex-btn-danger:hover {
-  background: #991b1b;
+  background: var(--vireon-error-hover);
 }
 
 .complex-btn-danger:disabled {

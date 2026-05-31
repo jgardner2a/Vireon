@@ -1,9 +1,11 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
+import { assertCanStageLogAttachmentFiles } from "@/lib/billing/planLimitStaging";
+import { isPlanLimitMessage } from "@/lib/billing/planCopy";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
-import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import {
   COMMUNICATION_CATEGORIES,
@@ -245,6 +247,18 @@ export default function CommunicationsPage() {
       return;
     }
 
+    const limitCheck = assertCanStageLogAttachmentFiles({
+      plan: state?.plan ?? "free",
+      existingCount: existingAttachments.length,
+      pendingCount: pendingAttachmentFiles.length,
+      incomingCount: imageCheck.files.length,
+    });
+    if (!limitCheck.ok) {
+      setError(limitCheck.message);
+      return;
+    }
+
+    setError(null);
     setPendingAttachmentFiles((prev) => [...prev, ...imageCheck.files]);
   };
 
@@ -341,6 +355,23 @@ export default function CommunicationsPage() {
       return;
     }
 
+    if (pendingAttachmentFiles.length > 0) {
+      const limitCheck = assertCanStageLogAttachmentFiles({
+        plan: state?.plan ?? "free",
+        existingCount:
+          sidebarMode === "edit" && selectedCommunication
+            ? existingAttachments.length
+            : 0,
+        pendingCount: 0,
+        incomingCount: pendingAttachmentFiles.length,
+      });
+      if (!limitCheck.ok) {
+        setError(limitCheck.message);
+        setPendingAttachmentFiles([]);
+        return;
+      }
+    }
+
     setSaving(true);
     setError(null);
 
@@ -365,6 +396,9 @@ export default function CommunicationsPage() {
       );
       if (attachmentError) {
         setSaving(false);
+        if (isPlanLimitMessage(attachmentError)) {
+          setPendingAttachmentFiles([]);
+        }
         setError(
           `Communication saved, but photos could not be uploaded: ${attachmentError}`
         );
@@ -400,8 +434,13 @@ export default function CommunicationsPage() {
     );
     if (attachmentError) {
       setSaving(false);
+      if (isPlanLimitMessage(attachmentError)) {
+        setPendingAttachmentFiles([]);
+      }
       setError(
-        `Communication saved, but photos could not be uploaded: ${attachmentError}`
+        isPlanLimitMessage(attachmentError)
+          ? attachmentError
+          : `Communication saved, but photos could not be uploaded: ${attachmentError}`
       );
       return;
     }
@@ -543,15 +582,8 @@ export default function CommunicationsPage() {
         </div>
       </header>
 
-      <PlanUsageHints
-        variant="logs-only"
-        refreshToken={communications.length}
-      />
-
       {error && !modalOpen ? (
-        <p className="communications-error" role="alert">
-          {error}
-        </p>
+        <DashboardAlert message={error} />
       ) : null}
 
       <div className="dashboard-split">
@@ -810,9 +842,7 @@ export default function CommunicationsPage() {
                 </div>
 
                 {error ? (
-                  <p className="communications-error" role="alert">
-                    {error}
-                  </p>
+                  <DashboardAlert message={error} />
                 ) : null}
 
                 <div className="communications-modal-delete-row">
@@ -1124,9 +1154,7 @@ export default function CommunicationsPage() {
               </div>
 
               {error ? (
-                <p className="communications-error" role="alert">
-                  {error}
-                </p>
+                <DashboardAlert message={error} />
               ) : null}
 
               <div className="communications-modal-actions">
@@ -1179,9 +1207,7 @@ export default function CommunicationsPage() {
               This action will permanently remove this record.
             </p>
             {error && confirmDeleteOpen ? (
-              <p className="communications-error" role="alert">
-                {error}
-              </p>
+              <DashboardAlert message={error} />
             ) : null}
             <div className="communications-confirm-actions">
               <button

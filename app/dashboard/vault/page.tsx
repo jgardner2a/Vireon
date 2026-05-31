@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PlanFeatureGate } from "@/app/dashboard/_components/PlanFeatureGate";
@@ -170,9 +171,7 @@ function VaultPageContent() {
           {summaryLoading ? (
             <p className="vault-placeholder">Loading documentation summary…</p>
           ) : summaryError ? (
-            <p className="vault-error" role="alert">
-              {summaryError}
-            </p>
+            <DashboardAlert message={summaryError} />
           ) : summary ? (
             <>
               <p className="vault-summary-total">

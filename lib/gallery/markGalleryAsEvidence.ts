@@ -33,7 +33,7 @@ function fileNameFromStoragePath(storagePath: string): string {
 
 /**
  * Updates gallery owner linkage, then ensures a matching attachments row exists.
- * Gallery update failure skips attachment insert; attachment failure does not rollback gallery.
+ * Attachment insert failure rolls back the gallery owner linkage.
  */
 export async function markGalleryAsEvidence(
   input: MarkGalleryAsEvidenceInput
@@ -142,11 +142,20 @@ export async function markGalleryAsEvidence(
 
   if (insertError) {
     console.error("[gallery] attachment insert after mark evidence", insertError);
+    await supabase
+      .from("gallery")
+      .update({
+        owner_type: null,
+        owner_id: null,
+      })
+      .eq("id", input.galleryId)
+      .eq("user_id", input.userId)
+      .eq("home_id", input.homeId);
     return {
       ok: false,
       message:
         insertError.message ||
-        "Image marked as evidence, but attachment record could not be saved.",
+        "Could not save attachment for this evidence image.",
     };
   }
 

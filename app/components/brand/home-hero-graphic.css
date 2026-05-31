@@ -1,0 +1,49 @@
+.vireon-hero-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+.vireon-hero-graphic__svg {
+  width: 100%;
+  height: auto;
+  max-height: 360px;
+}
+
+.vireon-hero-graphic__card--1 {
+  animation: vireon-hero-float 6s ease-in-out infinite;
+}
+
+.vireon-hero-graphic__card--2 {
+  animation: vireon-hero-float 6s ease-in-out 0.8s infinite;
+}
+
+.vireon-hero-graphic__card--3 {
+  animation: vireon-hero-float 6s ease-in-out 1.6s infinite;
+}
+
+.vireon-hero-graphic__house {
+  animation: vireon-hero-float 7s ease-in-out 0.4s infinite;
+}
+
+@keyframes vireon-hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vireon-hero-graphic__card--1,
+  .vireon-hero-graphic__card--2,
+  .vireon-hero-graphic__card--3,
+  .vireon-hero-graphic__house {
+    animation: none;
+  }
+}

@@ -14,7 +14,7 @@ import {
   GALLERY_OWNER_TYPE_NOTE,
 } from "@/lib/gallery/types";
 import { isEvidenceLogImageFile } from "@/lib/attachments/evidenceLogImageFiles";
-import { assertCanUploadStorageBytes } from "@/lib/billing/planEnforcement";
+import { assertCanAttachLogImages, assertCanUploadStorageBytes } from "@/lib/billing/planEnforcement";
 import { safeGalleryFileName } from "@/lib/gallery/safeFileName";
 import { prepareImageForUpload } from "@/lib/media/prepareImageForUpload";
 import { STORAGE_BUCKET, storagePath } from "@/lib/storagePath";
@@ -102,6 +102,25 @@ export async function uploadFilesToGallery(
 
   if (imageFiles.length === 0) {
     return { ok: true, storagePaths: [] };
+  }
+
+  if (input.context !== "gallery" && input.ownerId) {
+    const { owner_type, owner_id } = resolveOwnerFields(
+      input.context,
+      input.ownerId
+    );
+    if (owner_type && owner_id) {
+      const attachmentCheck = await assertCanAttachLogImages({
+        userId: input.userId,
+        homeId: input.homeId,
+        ownerType: owner_type,
+        ownerId: owner_id,
+        incomingCount: imageFiles.length,
+      });
+      if (!attachmentCheck.ok) {
+        return attachmentCheck;
+      }
+    }
   }
 
   const incomingBytes = imageFiles.reduce((total, file) => total + file.size, 0);

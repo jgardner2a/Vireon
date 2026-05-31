@@ -1,12 +1,11 @@
-/* Public marketing homepage — aligned with My Home palette */
+/* Public marketing homepage — Vireon Forest palette */
 
 .vireon-home {
   flex: 1 1 auto;
   width: 100%;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+  background: var(--vireon-surface);
+  color: var(--vireon-ink);
+  font-family: var(--vireon-font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -19,8 +18,23 @@
 }
 
 .vireon-home-hero {
-  padding: 32px 0 56px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 24px 0 56px;
+  border-bottom: 1px solid var(--vireon-border-subtle);
+}
+
+.vireon-home-hero__grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(260px, 420px);
+  gap: 40px 48px;
+  align-items: center;
+}
+
+.vireon-home-hero__content {
+  min-width: 0;
+}
+
+.vireon-home-hero__graphic {
+  justify-self: center;
 }
 
 .vireon-home-hero__eyebrow {
@@ -29,17 +43,17 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--vireon-sage);
 }
 
 .vireon-home-hero__title {
   margin: 0;
-  max-width: 18ch;
+  max-width: 16ch;
   font-size: clamp(2rem, 5vw, 2.75rem);
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-home-hero__lead {
@@ -47,7 +61,7 @@
   max-width: 42rem;
   font-size: 17px;
   line-height: 1.6;
-  color: #475569;
+  color: var(--vireon-ink-secondary);
 }
 
 .vireon-home-hero__points {
@@ -64,7 +78,7 @@
   padding-left: 20px;
   font-size: 15px;
   line-height: 1.5;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-home-hero__points li::before {
@@ -75,7 +89,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #0f172a;
+  background: var(--vireon-leaf);
 }
 
 .vireon-home-cta-row {
@@ -95,15 +109,15 @@
   font-family: inherit;
   color: #fff;
   text-decoration: none;
-  background: #0f172a;
-  border: 1px solid #0f172a;
-  border-radius: 10px;
+  background: var(--vireon-primary);
+  border: 1px solid var(--vireon-primary);
+  border-radius: var(--vireon-radius-md);
   transition: background 0.15s ease;
 }
 
 .vireon-home-btn-primary:hover {
-  background: #1e293b;
-  border-color: #1e293b;
+  background: var(--vireon-primary-hover);
+  border-color: var(--vireon-primary-hover);
 }
 
 .vireon-home-btn-secondary {
@@ -114,24 +128,24 @@
   font-size: 15px;
   font-weight: 500;
   font-family: inherit;
-  color: #0f172a;
+  color: var(--vireon-ink);
   text-decoration: none;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
+  border-radius: var(--vireon-radius-md);
   transition:
     background 0.15s ease,
     border-color 0.15s ease;
 }
 
 .vireon-home-btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--vireon-sage-subtle);
+  border-color: var(--vireon-sage);
 }
 
 .vireon-home-section {
   padding: 56px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--vireon-border-subtle);
 }
 
 .vireon-home-section:last-of-type {
@@ -144,7 +158,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--vireon-ink-faint);
 }
 
 .vireon-home-section__title {
@@ -152,7 +166,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-home-section__intro {
@@ -160,7 +174,7 @@
   max-width: 40rem;
   font-size: 15px;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-home-features {
@@ -172,24 +186,24 @@
 
 .vireon-home-feature-card {
   padding: 24px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
+  border-radius: var(--vireon-radius-lg);
+  box-shadow: var(--vireon-shadow-sm);
 }
 
 .vireon-home-feature-card__title {
   margin: 0 0 10px;
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-home-feature-card__text {
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-home-steps {
@@ -199,15 +213,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
-  counter-reset: home-step;
 }
 
 .vireon-home-step {
   padding: 22px 22px 22px 20px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
+  border-radius: var(--vireon-radius-lg);
+  box-shadow: var(--vireon-shadow-sm);
 }
 
 .vireon-home-step__number {
@@ -220,7 +233,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #fff;
-  background: #0f172a;
+  background: var(--vireon-forest);
   border-radius: 999px;
 }
 
@@ -228,14 +241,14 @@
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-home-step__text {
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-home-audience {
@@ -247,33 +260,37 @@
 
 .vireon-home-audience__item {
   padding: 20px 22px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
+  border-radius: var(--vireon-radius-lg);
 }
 
 .vireon-home-audience__item h3 {
   margin: 0 0 8px;
   font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-home-audience__item p {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-home-final {
   margin-top: 8px;
   padding: 40px 32px;
   text-align: center;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: linear-gradient(
+    165deg,
+    var(--vireon-sage-subtle) 0%,
+    var(--vireon-surface-elevated) 55%
+  );
+  border: 1px solid var(--vireon-border-subtle);
+  border-radius: var(--vireon-radius-lg);
+  box-shadow: var(--vireon-shadow-sm);
 }
 
 .vireon-home-final__title {
@@ -281,7 +298,7 @@
   font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-home-final__text {
@@ -289,12 +306,27 @@
   max-width: 32rem;
   font-size: 15px;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-home-final .vireon-home-cta-row {
   justify-content: center;
   margin-top: 28px;
+}
+
+@media (max-width: 900px) {
+  .vireon-home-hero__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vireon-home-hero__graphic {
+    order: -1;
+    max-width: 320px;
+  }
+
+  .vireon-home-hero__title {
+    max-width: none;
+  }
 }
 
 @media (max-width: 640px) {
@@ -303,7 +335,7 @@
   }
 
   .vireon-home-hero {
-    padding: 16px 0 40px;
+    padding: 8px 0 40px;
   }
 
   .vireon-home-cta-row {

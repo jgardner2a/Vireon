@@ -1,10 +1,9 @@
 .vireon-plans {
   flex: 1 1 auto;
   width: 100%;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+  background: var(--vireon-surface);
+  color: var(--vireon-ink);
+  font-family: var(--vireon-font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -27,7 +26,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--vireon-sage);
 }
 
 .vireon-plans-hero__title {
@@ -44,7 +43,7 @@
   max-width: 42rem;
   font-size: 17px;
   line-height: 1.6;
-  color: #475569;
+  color: var(--vireon-ink-secondary);
 }
 
 .vireon-plans-grid {
@@ -65,10 +64,10 @@
 }
 
 .vireon-plans-card--featured {
-  border-color: #93c5fd;
+  border-color: var(--vireon-sage);
   box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 0 0 1px rgba(59, 130, 246, 0.08);
+    var(--vireon-shadow-sm),
+    0 0 0 1px rgba(61, 107, 94, 0.12);
 }
 
 .vireon-plans-card__badge {
@@ -79,9 +78,9 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #1e40af;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: var(--vireon-pro-text);
+  background: var(--vireon-pro-bg);
+  border: 1px solid var(--vireon-pro-border);
   border-radius: 999px;
 }
 
@@ -97,20 +96,20 @@
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-plans-card__price-note {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-plans-card__description {
   margin: 16px 0 0;
   font-size: 15px;
   line-height: 1.55;
-  color: #475569;
+  color: var(--vireon-ink-secondary);
 }
 
 .vireon-plans-card__features {
@@ -138,7 +137,7 @@
   top: 0;
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-plans-card__features li.is-locked::before {
@@ -147,7 +146,7 @@
 }
 
 .vireon-plans-card__features li.is-locked {
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-plans-card__actions {
@@ -181,17 +180,17 @@
 
 .vireon-plans-btn--primary {
   color: #fff;
-  background: #0f172a;
-  border-color: #0f172a;
+  background: var(--vireon-primary);
+  border-color: var(--vireon-primary);
 }
 
 .vireon-plans-btn--primary:hover:not(:disabled) {
-  background: #1e293b;
-  border-color: #1e293b;
+  background: var(--vireon-primary-hover);
+  border-color: var(--vireon-primary-hover);
 }
 
 .vireon-plans-btn--secondary {
-  color: #0f172a;
+  color: var(--vireon-ink);
   background: #fff;
   border-color: #e2e8f0;
 }
@@ -205,7 +204,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.45;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
   text-align: center;
 }
 
@@ -228,7 +227,7 @@
   max-width: 40rem;
   font-size: 15px;
   line-height: 1.55;
-  color: #475569;
+  color: var(--vireon-ink-secondary);
 }
 
 .vireon-plans-export__row {

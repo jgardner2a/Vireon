@@ -1,9 +1,9 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
-import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import {
   getValidCachedSignedUrl,
   invalidateSignedUrlCache,
@@ -31,6 +31,9 @@ import {
   fetchSnapshotGalleryEvidence,
   SNAPSHOT_EVIDENCE_OWNER_TYPE,
 } from "@/lib/snapshots/galleryEvidence";
+import { isEvidenceLogImageFile } from "@/lib/attachments/evidenceLogImageFiles";
+import { assertCanAttachLogImages } from "@/lib/billing/planEnforcement";
+import { assertCanStageStorageBytes } from "@/lib/billing/planLimitStaging";
 import { uploadFilesToGallery } from "@/lib/gallery/uploadStorageFiles";
 import {
   getCachedStorageList,
@@ -554,9 +557,7 @@ function CreateFolderModal({
           </div>
 
           {error ? (
-            <p className="gallery-folder-modal-error" role="alert">
-              {error}
-            </p>
+            <DashboardAlert message={error} />
           ) : null}
 
           <div className="gallery-folder-modal-actions">
@@ -2013,6 +2014,43 @@ export default function GalleryPage() {
       uploadLogContext = "gallery";
     }
 
+    const plan = state?.plan ?? "free";
+    const imageFiles = fileList.filter(isEvidenceLogImageFile);
+
+    if (fileList.length > 0 && imageFiles.length === 0) {
+      setError(
+        "Gallery uploads must be image files (for example JPEG, PNG, or WebP)."
+      );
+      setUploading(false);
+      return;
+    }
+
+    const storageCheck = assertCanStageStorageBytes({
+      plan,
+      usedBytes: state?.storageBytesUsed,
+      incomingBytes: imageFiles.reduce((total, file) => total + file.size, 0),
+    });
+    if (!storageCheck.ok) {
+      setError(storageCheck.message);
+      setUploading(false);
+      return;
+    }
+
+    if (uploadContext !== "gallery" && uploadOwnerId && imageFiles.length > 0) {
+      const attachCheck = await assertCanAttachLogImages({
+        userId,
+        homeId,
+        ownerType: uploadContext,
+        ownerId: uploadOwnerId,
+        incomingCount: imageFiles.length,
+      });
+      if (!attachCheck.ok) {
+        setError(attachCheck.message);
+        setUploading(false);
+        return;
+      }
+    }
+
     const uploadResult = await uploadFilesToGallery({
       userId,
       homeId,
@@ -2040,12 +2078,8 @@ export default function GalleryPage() {
     <div className="dashboard-container gallery-page">
       <h1 className="dashboard-title">Gallery</h1>
 
-      <PlanUsageHints variant="storage-only" />
-
       {error ? (
-        <p className="gallery-error" role="alert">
-          {error}
-        </p>
+        <DashboardAlert message={error} />
       ) : null}
 
       <div className="gallery-page-layout">
@@ -2399,9 +2433,7 @@ export default function GalleryPage() {
               </div>
 
               {markEvidenceError ? (
-                <p className="gallery-folder-modal-error" role="alert">
-                  {markEvidenceError}
-                </p>
+                <DashboardAlert message={markEvidenceError} />
               ) : null}
 
               <div className="gallery-folder-modal-actions">
@@ -2501,9 +2533,7 @@ export default function GalleryPage() {
               </div>
 
               {moveFolderError ? (
-                <p className="gallery-folder-modal-error" role="alert">
-                  {moveFolderError}
-                </p>
+                <DashboardAlert message={moveFolderError} />
               ) : null}
 
               <div className="gallery-folder-modal-actions">
@@ -2604,9 +2634,7 @@ export default function GalleryPage() {
               </div>
 
               {copyFolderError ? (
-                <p className="gallery-folder-modal-error" role="alert">
-                  {copyFolderError}
-                </p>
+                <DashboardAlert message={copyFolderError} />
               ) : null}
 
               <div className="gallery-folder-modal-actions">

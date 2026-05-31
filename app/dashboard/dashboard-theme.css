@@ -1,0 +1,59 @@
+/* Dashboard shell — Vireon Forest palette */
+
+.dashboard-shell {
+  font-family: var(--vireon-font-sans);
+  color: var(--vireon-ink);
+  background: var(--vireon-surface-elevated);
+  -webkit-font-smoothing: antialiased;
+}
+
+.dashboard-sidebar {
+  background: var(--vireon-surface);
+  border-right-color: var(--vireon-border-subtle);
+}
+
+.dashboard-main {
+  background: var(--vireon-surface-elevated);
+}
+
+.dashboard-title {
+  color: var(--vireon-ink);
+  letter-spacing: -0.02em;
+}
+
+.dashboard-container > .dashboard-title:first-child,
+.dashboard-container > header:first-child {
+  margin-top: 0;
+}
+
+.dashboard-page-header {
+  margin: 0 0 24px;
+}
+
+.dashboard-page-header .dashboard-subtitle {
+  margin: 0;
+}
+
+.dashboard-nav-link--active {
+  background: var(--vireon-sage-subtle);
+  color: var(--vireon-forest);
+  border-color: var(--vireon-sage);
+  font-weight: 600;
+}
+
+.dashboard-nav-link:hover {
+  border-color: var(--vireon-sage);
+  background: var(--vireon-sage-subtle);
+}
+
+.dashboard-btn-primary,
+.my-home-btn-primary {
+  background: var(--vireon-primary);
+  border: 1px solid var(--vireon-primary);
+}
+
+.dashboard-btn-primary:hover:not(:disabled),
+.my-home-btn-primary:hover:not(:disabled) {
+  background: var(--vireon-primary-hover);
+  border-color: var(--vireon-primary-hover);
+}

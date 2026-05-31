@@ -11,6 +11,7 @@ import {
   ROUTE_PRIVACY,
   ROUTE_TERMS,
 } from "@/lib/appNavigation";
+import { VireonLogo } from "@/app/components/brand/VireonLogo";
 import { PASSWORD_MIN_LENGTH } from "@/lib/authValidation";
 import { signInUser, signUpUser } from "@/lib/authUsers";
 import { useAuthSession } from "@/lib/useAuthSession";
@@ -44,9 +45,11 @@ function AuthContextPanel({ isSignUp }: { isSignUp: boolean }) {
         className="vireon-auth-panel vireon-auth-panel--signup"
         aria-labelledby="auth-panel-heading"
       >
-        <span className="vireon-auth-panel__mark" aria-hidden>
-          V
-        </span>
+        <VireonLogo
+          showWordmark={false}
+          size="lg"
+          className="vireon-auth-panel__logo"
+        />
         <p className="vireon-auth-panel__eyebrow">Get started</p>
         <h2 id="auth-panel-heading" className="vireon-auth-panel__title">
           Your home record starts here
@@ -77,9 +80,11 @@ function AuthContextPanel({ isSignUp }: { isSignUp: boolean }) {
       className="vireon-auth-panel vireon-auth-panel--signin"
       aria-labelledby="auth-panel-heading"
     >
-      <span className="vireon-auth-panel__mark" aria-hidden>
-        V
-      </span>
+      <VireonLogo
+        showWordmark={false}
+        size="lg"
+        className="vireon-auth-panel__logo"
+      />
       <p className="vireon-auth-panel__eyebrow">Welcome back</p>
       <h2 id="auth-panel-heading" className="vireon-auth-panel__title">
         Continue your home record

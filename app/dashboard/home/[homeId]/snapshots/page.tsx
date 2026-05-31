@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -191,7 +192,7 @@ function HomeSnapshotsPageContent() {
     return (
       <div className="dashboard-container">
         <h1 className="dashboard-title">Snapshots</h1>
-        <p className="gallery-error">Invalid property link.</p>
+        <DashboardAlert message="Invalid property link." />
       </div>
     );
   }
@@ -200,7 +201,7 @@ function HomeSnapshotsPageContent() {
     return (
       <div className="dashboard-container">
         <h1 className="dashboard-title">Snapshots</h1>
-        <p className="gallery-error">Property not found or you do not have access.</p>
+        <DashboardAlert message="Property not found or you do not have access." />
         <Link
           href={ROUTE_DASHBOARD_MY_HOME}
           style={{ fontSize: 14, color: "#111" }}
@@ -220,9 +221,7 @@ function HomeSnapshotsPageContent() {
       </p>
 
       {error ? (
-        <p className="gallery-error" role="alert">
-          {error}
-        </p>
+        <DashboardAlert message={error} />
       ) : null}
 
       <SnapshotSection

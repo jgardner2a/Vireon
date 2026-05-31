@@ -1,7 +1,6 @@
 import {
   EXPORT_ONE_TIME_PRICE_LABEL,
   formatPlanLimitValue,
-  formatStorageBytes,
   formatPlanStorageLimitLabel,
   getPlanDefinition,
   getPlanLimits,
@@ -17,12 +16,17 @@ import {
   planMaxImagesPerLogMessage,
   planMaxSnapshotImagesPerRoomMessage,
   planStorageLimitMessage,
+  planUsageQueryFailedMessage,
 } from "@/lib/billing/planCopy";
 import { getUserPlanTier, getUserProfile } from "@/lib/billing/getUserProfile";
 import type { ExportEligibility, PlanTier } from "@/lib/billing/types";
 import { supabase } from "@/lib/supabaseClient";
 
 export type PlanLimitResult = { ok: true } | { ok: false; message: string };
+
+export type BillingQueryResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; message: string };
 
 const EVIDENCE_LOG_TABLES = [
   "maintenance_logs",
@@ -31,37 +35,52 @@ const EVIDENCE_LOG_TABLES = [
   "notes",
 ] as const;
 
-export async function getGalleryStorageBytesUsed(userId: string): Promise<number> {
+function billingQueryFailure(
+  context: string,
+  error: { message?: string }
+): BillingQueryResult<never> {
+  console.error(context, error);
+  return { ok: false, message: planUsageQueryFailedMessage() };
+}
+
+export async function getGalleryStorageBytesUsed(
+  userId: string
+): Promise<BillingQueryResult<number>> {
   const { data, error } = await supabase
     .from("gallery")
     .select("file_size")
     .eq("user_id", userId);
 
   if (error) {
-    console.error("[billing] sum gallery storage", error);
-    return 0;
+    return billingQueryFailure("[billing] sum gallery storage", error);
   }
 
-  return (data ?? []).reduce(
+  const value = (data ?? []).reduce(
     (total, row) => total + Math.max(0, Number(row.file_size) || 0),
     0
   );
+
+  return { ok: true, value };
 }
 
-export async function getDocumentStorageBytesUsed(userId: string): Promise<number> {
+export async function getDocumentStorageBytesUsed(
+  userId: string
+): Promise<BillingQueryResult<number>> {
   const { data: homes, error: homesError } = await supabase
     .from("homes")
     .select("id")
     .eq("user_id", userId);
 
   if (homesError) {
-    console.error("[billing] fetch homes for document storage", homesError);
-    return 0;
+    return billingQueryFailure(
+      "[billing] fetch homes for document storage",
+      homesError
+    );
   }
 
   const homeIds = (homes ?? []).map((home) => home.id);
   if (homeIds.length === 0) {
-    return 0;
+    return { ok: true, value: 0 };
   }
 
   const { data, error } = await supabase
@@ -70,35 +89,43 @@ export async function getDocumentStorageBytesUsed(userId: string): Promise<numbe
     .in("home_id", homeIds);
 
   if (error) {
-    console.error("[billing] sum document storage", error);
-    return 0;
+    return billingQueryFailure("[billing] sum document storage", error);
   }
 
-  return (data ?? []).reduce(
+  const value = (data ?? []).reduce(
     (total, row) => total + Math.max(0, Number(row.file_size) || 0),
     0
   );
+
+  return { ok: true, value };
 }
 
 export async function getUserStorageBytesUsed(
   userId: string,
   plan: PlanTier = "free"
-): Promise<number> {
-  const galleryBytes = await getGalleryStorageBytesUsed(userId);
-  const { storageIncludesDocumentsBucket } = getPlanLimits(plan);
-
-  if (!storageIncludesDocumentsBucket) {
-    return galleryBytes;
+): Promise<BillingQueryResult<number>> {
+  const galleryResult = await getGalleryStorageBytesUsed(userId);
+  if (!galleryResult.ok) {
+    return galleryResult;
   }
 
-  const documentBytes = await getDocumentStorageBytesUsed(userId);
-  return galleryBytes + documentBytes;
+  const { storageIncludesDocumentsBucket } = getPlanLimits(plan);
+  if (!storageIncludesDocumentsBucket) {
+    return { ok: true, value: galleryResult.value };
+  }
+
+  const documentResult = await getDocumentStorageBytesUsed(userId);
+  if (!documentResult.ok) {
+    return documentResult;
+  }
+
+  return { ok: true, value: galleryResult.value + documentResult.value };
 }
 
 export async function countEvidenceLogsForHome(
   userId: string,
   homeId: string
-): Promise<number> {
+): Promise<BillingQueryResult<number>> {
   let total = 0;
 
   for (const table of EVIDENCE_LOG_TABLES) {
@@ -109,28 +136,28 @@ export async function countEvidenceLogsForHome(
       .eq("home_id", homeId);
 
     if (error) {
-      console.error(`[billing] count ${table}`, error);
-      continue;
+      return billingQueryFailure(`[billing] count ${table}`, error);
     }
 
     total += count ?? 0;
   }
 
-  return total;
+  return { ok: true, value: total };
 }
 
-export async function countHomesForUser(userId: string): Promise<number> {
+export async function countHomesForUser(
+  userId: string
+): Promise<BillingQueryResult<number>> {
   const { count, error } = await supabase
     .from("homes")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
 
   if (error) {
-    console.error("[billing] count homes", error);
-    return 0;
+    return billingQueryFailure("[billing] count homes", error);
   }
 
-  return count ?? 0;
+  return { ok: true, value: count ?? 0 };
 }
 
 export async function countAttachmentsForLog(
@@ -138,7 +165,7 @@ export async function countAttachmentsForLog(
   homeId: string,
   ownerType: string,
   ownerId: string
-): Promise<number> {
+): Promise<BillingQueryResult<number>> {
   const { count, error } = await supabase
     .from("attachments")
     .select("*", { count: "exact", head: true })
@@ -148,11 +175,10 @@ export async function countAttachmentsForLog(
     .eq("owner_id", ownerId);
 
   if (error) {
-    console.error("[billing] count attachments", error);
-    return 0;
+    return billingQueryFailure("[billing] count attachments", error);
   }
 
-  return count ?? 0;
+  return { ok: true, value: count ?? 0 };
 }
 
 function normalizeSnapshotRoomKey(room: string | undefined): string | null {
@@ -167,7 +193,7 @@ function normalizeSnapshotRoomKey(room: string | undefined): string | null {
 export async function countSnapshotImagesForRoom(
   snapshotId: string,
   room: string | undefined
-): Promise<number> {
+): Promise<BillingQueryResult<number>> {
   const roomValue = normalizeSnapshotRoomKey(room);
   let query = supabase
     .from("snapshot_images")
@@ -183,11 +209,10 @@ export async function countSnapshotImagesForRoom(
   const { count, error } = await query;
 
   if (error) {
-    console.error("[billing] count snapshot_images", error);
-    return 0;
+    return billingQueryFailure("[billing] count snapshot_images", error);
   }
 
-  return count ?? 0;
+  return { ok: true, value: count ?? 0 };
 }
 
 export async function assertCanAddSnapshotImages(input: {
@@ -206,12 +231,15 @@ export async function assertCanAddSnapshotImages(input: {
     return { ok: true };
   }
 
-  const existingCount = await countSnapshotImagesForRoom(
+  const countResult = await countSnapshotImagesForRoom(
     input.snapshotId,
     input.room
   );
+  if (!countResult.ok) {
+    return { ok: false, message: countResult.message };
+  }
 
-  if (existingCount + input.incomingCount <= maxSnapshotImagesPerRoom) {
+  if (countResult.value + input.incomingCount <= maxSnapshotImagesPerRoom) {
     return { ok: true };
   }
 
@@ -271,8 +299,12 @@ export async function assertCanCreateHome(userId: string): Promise<PlanLimitResu
     return { ok: true };
   }
 
-  const homeCount = await countHomesForUser(userId);
-  if (homeCount < maxHomes) {
+  const countResult = await countHomesForUser(userId);
+  if (!countResult.ok) {
+    return { ok: false, message: countResult.message };
+  }
+
+  if (countResult.value < maxHomes) {
     return { ok: true };
   }
 
@@ -289,8 +321,12 @@ export async function assertCanCreateEvidenceLog(
     return { ok: true };
   }
 
-  const logCount = await countEvidenceLogsForHome(userId, homeId);
-  if (logCount < maxEvidenceLogsPerHome) {
+  const countResult = await countEvidenceLogsForHome(userId, homeId);
+  if (!countResult.ok) {
+    return { ok: false, message: countResult.message };
+  }
+
+  if (countResult.value < maxEvidenceLogsPerHome) {
     return { ok: true };
   }
 
@@ -317,14 +353,17 @@ export async function assertCanAttachLogImages(input: {
     return { ok: true };
   }
 
-  const existingCount = await countAttachmentsForLog(
+  const countResult = await countAttachmentsForLog(
     input.userId,
     input.homeId,
     input.ownerType,
     input.ownerId
   );
+  if (!countResult.ok) {
+    return { ok: false, message: countResult.message };
+  }
 
-  if (existingCount + input.incomingCount <= maxImagesPerLog) {
+  if (countResult.value + input.incomingCount <= maxImagesPerLog) {
     return { ok: true };
   }
 
@@ -344,9 +383,12 @@ export async function assertCanUploadStorageBytes(
 
   const plan = await getUserPlanTier(userId);
   const limitBytes = getPlanStorageLimitBytes(plan);
-  const usedBytes = await getUserStorageBytesUsed(userId, plan);
+  const usageResult = await getUserStorageBytesUsed(userId, plan);
+  if (!usageResult.ok) {
+    return { ok: false, message: usageResult.message };
+  }
 
-  if (usedBytes + incomingBytes <= limitBytes) {
+  if (usageResult.value + incomingBytes <= limitBytes) {
     return { ok: true };
   }
 
@@ -370,8 +412,12 @@ export async function assertCanUploadDocumentBytes(input: {
   }
 
   const replaceBytes = Math.max(0, input.replaceBytes ?? 0);
-  const usedBytes = await getUserStorageBytesUsed(input.userId, plan);
-  const projected = usedBytes - replaceBytes + input.incomingBytes;
+  const usageResult = await getUserStorageBytesUsed(input.userId, plan);
+  if (!usageResult.ok) {
+    return { ok: false, message: usageResult.message };
+  }
+
+  const projected = usageResult.value - replaceBytes + input.incomingBytes;
 
   if (projected <= limits.storageLimitBytes) {
     return { ok: true };

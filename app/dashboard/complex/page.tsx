@@ -1,9 +1,11 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
+import { assertCanStageLogAttachmentFiles } from "@/lib/billing/planLimitStaging";
+import { isPlanLimitMessage } from "@/lib/billing/planCopy";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
-import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import { formatLogDate, previewDescription } from "@/lib/maintenance/format";
 import {
@@ -310,6 +312,18 @@ export default function ComplexPage() {
       return;
     }
 
+    const limitCheck = assertCanStageLogAttachmentFiles({
+      plan: state?.plan ?? "free",
+      existingCount: existingAttachments.length,
+      pendingCount: pendingAttachmentFiles.length,
+      incomingCount: imageCheck.files.length,
+    });
+    if (!limitCheck.ok) {
+      setError(limitCheck.message);
+      return;
+    }
+
+    setError(null);
     setPendingAttachmentFiles((prev) => [...prev, ...imageCheck.files]);
   };
 
@@ -348,6 +362,21 @@ export default function ComplexPage() {
       return;
     }
 
+    if (pendingAttachmentFiles.length > 0) {
+      const limitCheck = assertCanStageLogAttachmentFiles({
+        plan: state?.plan ?? "free",
+        existingCount:
+          sidebarMode === "edit" && selectedIssue ? existingAttachments.length : 0,
+        pendingCount: 0,
+        incomingCount: pendingAttachmentFiles.length,
+      });
+      if (!limitCheck.ok) {
+        setError(limitCheck.message);
+        setPendingAttachmentFiles([]);
+        return;
+      }
+    }
+
     setSaving(true);
     setError(null);
 
@@ -370,6 +399,9 @@ export default function ComplexPage() {
       const attachmentError = await uploadPendingAttachments(selectedIssue.id);
       if (attachmentError) {
         setSaving(false);
+        if (isPlanLimitMessage(attachmentError)) {
+          setPendingAttachmentFiles([]);
+        }
         setError(
           `Complex issue saved, but photos could not be uploaded: ${attachmentError}`
         );
@@ -403,8 +435,13 @@ export default function ComplexPage() {
     const attachmentError = await uploadPendingAttachments(result.issue.id);
     if (attachmentError) {
       setSaving(false);
+      if (isPlanLimitMessage(attachmentError)) {
+        setPendingAttachmentFiles([]);
+      }
       setError(
-        `Complex issue saved, but photos could not be uploaded: ${attachmentError}`
+        isPlanLimitMessage(attachmentError)
+          ? attachmentError
+          : `Complex issue saved, but photos could not be uploaded: ${attachmentError}`
       );
       return;
     }
@@ -539,12 +576,8 @@ export default function ComplexPage() {
         </div>
       </header>
 
-      <PlanUsageHints variant="logs-only" refreshToken={issues.length} />
-
       {error && !modalOpen ? (
-        <p className="complex-error" role="alert">
-          {error}
-        </p>
+        <DashboardAlert message={error} />
       ) : null}
 
       <div className="dashboard-split">
@@ -804,9 +837,7 @@ export default function ComplexPage() {
                 </div>
 
                 {error ? (
-                  <p className="complex-error" role="alert">
-                    {error}
-                  </p>
+                  <DashboardAlert message={error} />
                 ) : null}
 
                 <div className="complex-modal-delete-row">
@@ -1126,9 +1157,7 @@ export default function ComplexPage() {
               </div>
 
               {error ? (
-                <p className="complex-error" role="alert">
-                  {error}
-                </p>
+                <DashboardAlert message={error} />
               ) : null}
 
               <div className="complex-modal-actions">
@@ -1178,9 +1207,7 @@ export default function ComplexPage() {
               This action will permanently remove this record.
             </p>
             {error && confirmDeleteOpen ? (
-              <p className="complex-error" role="alert">
-                {error}
-              </p>
+              <DashboardAlert message={error} />
             ) : null}
             <div className="complex-confirm-actions">
               <button

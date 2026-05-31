@@ -34,13 +34,38 @@ export function planMaxImagesPerLogMessage(maxImages: number): string {
 }
 
 export function planMaxSnapshotImagesPerRoomMessage(maxImages: number): string {
-  return `Pro includes up to ${maxImages} snapshot images per room. Remove images from this room or choose another room.`;
+  return `Please limit ${maxImages} snapshot images per room.`;
 }
 
 export function planStorageLimitMessage(): string {
   return "You have reached your plan storage limit. Delete files or upgrade to Pro for more storage.";
 }
 
+export function planUsageQueryFailedMessage(): string {
+  return "Could not verify plan usage. Try again in a moment.";
+}
+
 export function planExportBlockedMessage(): string {
   return `Evidence Package export requires Pro (${PRO_ANNUAL_PRICE_LABEL}, includes 1 export per year) or a one-time purchase (${EXPORT_ONE_TIME_PRICE_LABEL}).`;
+}
+
+/** True when a user-facing string is a billing/plan limit (not a generic failure). */
+export function isPlanLimitMessage(message: string): boolean {
+  const text = message.trim();
+  if (!text) {
+    return false;
+  }
+
+  return (
+    text.startsWith("Free includes") ||
+    text.startsWith("Your plan allows") ||
+    text.startsWith("You have reached your plan storage limit") ||
+    text.startsWith("Please limit") ||
+    text.startsWith("Pro includes up to") ||
+    text.includes(" is available on Pro") ||
+    text.startsWith("Evidence Package export requires") ||
+    text.startsWith("No included Pro export available") ||
+    text.startsWith("No export credits available") ||
+    text.startsWith("Upgrade to Pro")
+  );
 }

@@ -181,4 +181,7 @@ using (user_id = auth.uid());
 grant select, insert, delete on table public.profiles to authenticated;
 grant select on table public.subscriptions to authenticated;
 
+grant select, update on table public.profiles to service_role;
+grant select on table public.subscriptions to service_role;
+
 notify pgrst, 'reload schema';

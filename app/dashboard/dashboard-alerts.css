@@ -1,0 +1,60 @@
+.dashboard-alert {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  border-radius: var(--vireon-radius-md);
+  border: 1px solid transparent;
+}
+
+.dashboard-alert--error {
+  color: var(--vireon-error-hover);
+  background: var(--vireon-error-bg);
+  border-color: var(--vireon-error-border);
+}
+
+.dashboard-plan-notice-card {
+  padding: 20px;
+  border-radius: var(--vireon-radius-lg);
+  border: 1px solid var(--vireon-error-border);
+  background: var(--vireon-error-bg);
+}
+
+.dashboard-plan-notice-card .dashboard-alert {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vireon-error-hover);
+}
+
+.dashboard-plan-notice-card__hint {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--vireon-error-hover);
+  line-height: 1.55;
+}
+
+.dashboard-plan-notice-card__list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: var(--vireon-error-hover);
+  line-height: 1.6;
+}
+
+.dashboard-plan-notice-card__link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--vireon-forest);
+  text-decoration: none;
+}
+
+.dashboard-plan-notice-card__link:hover {
+  color: var(--vireon-forest-mid);
+  text-decoration: underline;
+}

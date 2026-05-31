@@ -1,9 +1,11 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assertEvidenceLogImageFilesOnly } from "@/lib/attachments/evidenceLogImageFiles";
+import { assertCanStageLogAttachmentFiles } from "@/lib/billing/planLimitStaging";
+import { isPlanLimitMessage } from "@/lib/billing/planCopy";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
-import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDetailAttachments } from "@/lib/dashboard/useDetailAttachments";
 import {
   formatNoteDate,
@@ -224,6 +226,18 @@ export default function NotesPage() {
       return;
     }
 
+    const limitCheck = assertCanStageLogAttachmentFiles({
+      plan: state?.plan ?? "free",
+      existingCount: existingAttachments.length,
+      pendingCount: pendingAttachmentFiles.length,
+      incomingCount: imageCheck.files.length,
+    });
+    if (!limitCheck.ok) {
+      setError(limitCheck.message);
+      return;
+    }
+
+    setError(null);
     setPendingAttachmentFiles((prev) => [...prev, ...imageCheck.files]);
   };
 
@@ -310,6 +324,21 @@ export default function NotesPage() {
       return;
     }
 
+    if (pendingAttachmentFiles.length > 0) {
+      const limitCheck = assertCanStageLogAttachmentFiles({
+        plan: state?.plan ?? "free",
+        existingCount:
+          sidebarMode === "edit" && selectedNote ? existingAttachments.length : 0,
+        pendingCount: 0,
+        incomingCount: pendingAttachmentFiles.length,
+      });
+      if (!limitCheck.ok) {
+        setError(limitCheck.message);
+        setPendingAttachmentFiles([]);
+        return;
+      }
+    }
+
     setSaving(true);
     setError(null);
 
@@ -331,6 +360,9 @@ export default function NotesPage() {
       const attachmentError = await uploadPendingAttachments(selectedNote.id);
       if (attachmentError) {
         setSaving(false);
+        if (isPlanLimitMessage(attachmentError)) {
+          setPendingAttachmentFiles([]);
+        }
         setError(
           `Note saved, but photos could not be uploaded: ${attachmentError}`
         );
@@ -363,7 +395,14 @@ export default function NotesPage() {
     const attachmentError = await uploadPendingAttachments(result.note.id);
     if (attachmentError) {
       setSaving(false);
-      setError(`Note saved, but photos could not be uploaded: ${attachmentError}`);
+      if (isPlanLimitMessage(attachmentError)) {
+        setPendingAttachmentFiles([]);
+      }
+      setError(
+        isPlanLimitMessage(attachmentError)
+          ? attachmentError
+          : `Note saved, but photos could not be uploaded: ${attachmentError}`
+      );
       return;
     }
 
@@ -468,12 +507,8 @@ export default function NotesPage() {
         </div>
       </header>
 
-      <PlanUsageHints variant="logs-only" refreshToken={notes.length} />
-
       {error && !modalOpen ? (
-        <p className="notes-error" role="alert">
-          {error}
-        </p>
+        <DashboardAlert message={error} />
       ) : null}
 
       <div className="dashboard-split">
@@ -658,9 +693,7 @@ export default function NotesPage() {
                 </div>
 
                 {error ? (
-                  <p className="notes-error" role="alert">
-                    {error}
-                  </p>
+                  <DashboardAlert message={error} />
                 ) : null}
 
                 <div className="notes-modal-delete-row">
@@ -919,9 +952,7 @@ export default function NotesPage() {
               </div>
 
               {error ? (
-                <p className="notes-error" role="alert">
-                  {error}
-                </p>
+                <DashboardAlert message={error} />
               ) : null}
 
               <div className="notes-modal-actions">
@@ -968,9 +999,7 @@ export default function NotesPage() {
               This action will permanently remove this note.
             </p>
             {error && confirmDeleteOpen ? (
-              <p className="notes-error" role="alert">
-                {error}
-              </p>
+              <DashboardAlert message={error} />
             ) : null}
             <div className="notes-confirm-actions">
               <button

@@ -152,7 +152,7 @@ export function billingErrorMessage(error: {
   }
 
   if (isPermissionDeniedError(extracted)) {
-    return "Profile table permissions are missing. Run supabase/sql/004_profiles_api_grants.sql in Supabase.";
+    return "Profile table permissions are missing. Run supabase/sql/004_profiles_api_grants.sql in Supabase (includes service_role grants for export).";
   }
 
   if (isMissingColumnError(extracted)) {

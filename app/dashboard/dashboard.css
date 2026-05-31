@@ -8,7 +8,7 @@ html {
   justify-content: center;
   min-height: 40vh;
   font-size: 14px;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .dashboard-auth-banner {
@@ -20,9 +20,9 @@ html {
   margin: 0;
   padding: 6px 16px;
   font-size: 12px;
-  color: #666;
-  background: #fafafa;
-  border-bottom: 1px solid #eee;
+  color: var(--vireon-ink-muted);
+  background: var(--vireon-surface);
+  border-bottom: 1px solid var(--vireon-border-subtle);
   text-align: center;
   box-sizing: border-box;
 }
@@ -37,23 +37,25 @@ html {
 .dashboard-sidebar {
   width: 220px;
   flex-shrink: 0;
-  border-right: 1px solid #eee;
-  padding: 24px 16px;
+  border-right: 1px solid var(--vireon-border-subtle);
+  padding: var(--vireon-dashboard-gutter-y) 16px;
+  box-sizing: border-box;
+}
+
+.dashboard-main {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding-inline: var(--vireon-dashboard-gutter-x);
+  padding-block: var(--vireon-dashboard-gutter-y);
   box-sizing: border-box;
 }
 
 .dashboard-brand {
-  display: block;
-  font-weight: 600;
-  font-size: 22px;
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
-  color: #111;
   text-decoration: none;
-  text-align: center;
-}
-
-.dashboard-brand:hover {
-  color: #333;
 }
 
 .dashboard-nav {
@@ -68,7 +70,7 @@ html {
   gap: 6px;
   margin: 2px 0 0 10px;
   padding-left: 8px;
-  border-left: 1px solid #eee;
+  border-left: 1px solid var(--vireon-border-subtle);
 }
 
 .dashboard-nav-section {
@@ -88,39 +90,31 @@ html {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #888;
+  color: var(--vireon-ink-faint);
   margin: 0 0 8px;
 }
 
 .dashboard-nav-link {
   display: block;
   padding: 8px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   font-size: 14px;
-  color: #333;
+  color: var(--vireon-ink-secondary);
   text-decoration: none;
   box-sizing: border-box;
   text-align: center;
 }
 
 .dashboard-nav-link:hover {
-  border-color: #9ca3af;
+  border-color: var(--vireon-sage);
 }
 
 .dashboard-nav-link--active {
-  background: #f3f4f6;
+  background: var(--vireon-sage-subtle);
   font-weight: 500;
-  color: #111;
-  border-color: #9ca3af;
-}
-
-.dashboard-main {
-  flex: 1;
-  width: 100%;
-  padding-inline: 10%;
-  padding-block: 32px;
-  box-sizing: border-box;
+  color: var(--vireon-ink);
+  border-color: var(--vireon-sage);
 }
 
 .dashboard-container {
@@ -138,14 +132,14 @@ html {
 .dashboard-subtitle {
   margin: 0;
   font-size: 14px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.5;
 }
 
 .dashboard-card {
   margin-top: 24px;
   padding: 20px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
   max-width: 480px;
 }
@@ -155,15 +149,15 @@ html {
   padding: 10px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background: #111;
+  color: var(--vireon-on-primary);
+  background: var(--vireon-primary);
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .dashboard-btn-primary:hover {
-  background: #333;
+  background: var(--vireon-primary-hover);
 }
 
 .dashboard-btn-primary:disabled {
@@ -174,7 +168,7 @@ html {
 .gallery-error {
   margin: 0 0 12px;
   font-size: 14px;
-  color: #b91c1c;
+  color: var(--vireon-error);
   line-height: 1.5;
 }
 
@@ -192,10 +186,6 @@ html {
 
 .gallery-page {
   scroll-behavior: smooth;
-}
-
-.dashboard-main:has(.gallery-page) {
-  padding-inline: 24px;
 }
 
 .dashboard-container.gallery-page {
@@ -225,16 +215,16 @@ html {
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: 16px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .gallery-panel-title {
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .gallery-panel-all {
@@ -245,21 +235,21 @@ html {
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  color: #333;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .gallery-panel-all:hover {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .gallery-panel-all--active {
-  border-color: #111;
-  background: #fff;
-  box-shadow: 0 0 0 1px #111;
+  border-color: var(--vireon-primary);
+  background: var(--vireon-surface-elevated);
+  box-shadow: 0 0 0 1px var(--vireon-primary);
 }
 
 .gallery-panel-section {
@@ -273,7 +263,7 @@ html {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .gallery-panel-folder-list {
@@ -298,9 +288,9 @@ html {
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  color: #333;
-  background: #fff;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   cursor: pointer;
   transition:
@@ -324,35 +314,35 @@ html {
 }
 
 .gallery-panel-folder:hover {
-  background: #f3f4f6;
-  border-color: #d4d4d4;
+  background: var(--vireon-sage-subtle);
+  border-color: var(--vireon-border);
 }
 
 .gallery-panel-folder:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: 2px;
 }
 
 .gallery-panel-folder--active {
-  background: #fff;
-  border-color: #111;
-  box-shadow: 0 0 0 1px #111;
+  background: var(--vireon-surface-elevated);
+  border-color: var(--vireon-primary);
+  box-shadow: 0 0 0 1px var(--vireon-primary);
 }
 
 .gallery-panel-folder--active:hover {
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .gallery-panel-empty {
   margin: 0;
   font-size: 12px;
-  color: #888;
+  color: var(--vireon-ink-faint);
 }
 
 .gallery-panel-loading {
   margin: 0;
   font-size: 12px;
-  color: #666;
+  color: var(--vireon-ink-muted);
 }
 
 .gallery-folder-sidebar {
@@ -364,9 +354,9 @@ html {
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: 16px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .gallery-folder-sidebar-header {
@@ -380,24 +370,24 @@ html {
   font-size: 13px;
   font-weight: 600;
   margin: 0;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .gallery-folder-sidebar-header-btn {
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 6px;
-  border: 1px solid #ddd;
-  background: #fff;
+  border: 1px solid var(--vireon-border);
+  background: var(--vireon-surface-elevated);
   cursor: pointer;
 }
 
 .gallery-folder-sidebar-header-btn:hover {
-  background: #f5f5f5;
+  background: var(--vireon-surface-alt);
 }
 
 .gallery-folder-sidebar-header-btn:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: 2px;
 }
 
@@ -409,15 +399,15 @@ html {
   font-size: 13px;
   font-weight: 500;
   text-align: center;
-  color: #111;
-  background: #fff;
-  border: 1px dashed #94a3b8;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface-elevated);
+  border: 1px dashed var(--vireon-sage);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .gallery-folder-sidebar-move-btn:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .gallery-folder-sidebar-move-btn:disabled {
@@ -452,9 +442,9 @@ html {
   width: 100%;
   max-width: 400px;
   padding: 20px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 16px 16px 12px 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
@@ -482,28 +472,28 @@ html {
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #333;
+  color: var(--vireon-ink-secondary);
 }
 
 .gallery-folder-modal-field input {
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   box-sizing: border-box;
 }
 
 .gallery-folder-modal-field input:focus {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: 1px;
-  border-color: #111;
+  border-color: var(--vireon-primary);
 }
 
 .gallery-folder-modal-error {
   margin: 0;
   font-size: 13px;
-  color: #b91c1c;
+  color: var(--vireon-error);
 }
 
 .gallery-folder-move-options {
@@ -522,9 +512,9 @@ html {
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  color: #333;
-  background: #fff;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   cursor: pointer;
   transition:
@@ -534,18 +524,18 @@ html {
 }
 
 .gallery-folder-move-option:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #d4d4d4;
+  background: var(--vireon-sage-subtle);
+  border-color: var(--vireon-border);
 }
 
 .gallery-folder-move-option--active {
-  background: #fff;
-  border-color: #111;
-  box-shadow: 0 0 0 1px #111;
+  background: var(--vireon-surface-elevated);
+  border-color: var(--vireon-primary);
+  box-shadow: 0 0 0 1px var(--vireon-primary);
 }
 
 .gallery-folder-move-option--active:hover:not(:disabled) {
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .gallery-folder-modal-actions {
@@ -565,23 +555,23 @@ html {
 }
 
 .gallery-folder-modal-btn-secondary {
-  color: #111;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
 }
 
 .gallery-folder-modal-btn-secondary:hover:not(:disabled) {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .gallery-folder-modal-btn-primary {
-  color: #fff;
-  background: #111;
+  color: var(--vireon-on-primary);
+  background: var(--vireon-primary);
   border: none;
 }
 
 .gallery-folder-modal-btn-primary:hover:not(:disabled) {
-  background: #333;
+  background: var(--vireon-primary-hover);
 }
 
 .gallery-folder-modal-btn-secondary:disabled,
@@ -598,21 +588,21 @@ html {
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  color: #333;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border);
   border-radius: 8px;
   cursor: pointer;
 }
 
 .gallery-folder-sidebar-all:hover {
-  background: #f9fafb;
+  background: var(--vireon-surface);
 }
 
 .gallery-folder-sidebar-all--active {
-  border-color: #111;
-  background: #fff;
-  box-shadow: 0 0 0 1px #111;
+  border-color: var(--vireon-primary);
+  background: var(--vireon-surface-elevated);
+  box-shadow: 0 0 0 1px var(--vireon-primary);
 }
 
 .gallery-folder-sidebar-list {
@@ -637,9 +627,9 @@ html {
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  color: #333;
-  background: #fff;
-  border: 1px solid #e5e5e5;
+  color: var(--vireon-ink-secondary);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   cursor: pointer;
   transition:
@@ -663,36 +653,36 @@ html {
 }
 
 .gallery-folder-sidebar-item:hover {
-  background: #f3f4f6;
-  border-color: #d4d4d4;
+  background: var(--vireon-sage-subtle);
+  border-color: var(--vireon-border);
 }
 
 .gallery-folder-sidebar-item:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--vireon-primary);
   outline-offset: 2px;
 }
 
 .gallery-folder-sidebar-item--active {
-  background: #fff;
-  border-color: #111;
-  box-shadow: 0 0 0 1px #111;
+  background: var(--vireon-surface-elevated);
+  border-color: var(--vireon-primary);
+  box-shadow: 0 0 0 1px var(--vireon-primary);
 }
 
 .gallery-folder-sidebar-item--active:hover {
-  background: #fafafa;
+  background: var(--vireon-surface);
 }
 
 .gallery-folder-sidebar-empty,
 .gallery-folder-sidebar-loading {
   margin: 0;
   font-size: 12px;
-  color: #888;
+  color: var(--vireon-ink-faint);
 }
 
 .gallery-evidence-sidebar {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--vireon-border-subtle);
 }
 
 .gallery-evidence-sidebar-header {
@@ -703,7 +693,7 @@ html {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
 }
 
 .gallery-evidence-sidebar-list {
@@ -722,7 +712,7 @@ html {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: #555;
+  color: var(--vireon-ink-muted);
 }
 
 .gallery-evidence-record-list {
@@ -785,10 +775,10 @@ html {
 .gallery-grid-item {
   position: relative;
   margin: 0;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 8px;
   overflow: hidden;
-  background: #fafafa;
+  background: var(--vireon-surface);
   aspect-ratio: 1;
   contain: layout style paint;
   transition: box-shadow 150ms ease, border-color 150ms ease;
@@ -813,12 +803,12 @@ html {
 }
 
 .gallery-grid-item--selected {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px #2563eb;
+  border-color: var(--vireon-sage);
+  box-shadow: 0 0 0 2px var(--vireon-sage);
 }
 
 .gallery-grid-item--selected::before {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(24, 92, 71, 0.08);
 }
 
 .gallery-grid-checkbox {
@@ -830,7 +820,7 @@ html {
   height: 18px;
   margin: 0;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: var(--vireon-sage);
 }
 
 .gallery-grid-checkbox:disabled {
@@ -846,16 +836,16 @@ html {
   padding: 4px 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #111;
+  color: var(--vireon-ink);
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--vireon-border);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .gallery-grid-mark-btn:hover {
-  background: #fff;
-  border-color: #9ca3af;
+  background: var(--vireon-surface-elevated);
+  border-color: var(--vireon-sage);
 }
 
 .gallery-toolbar.dashboard-card {
@@ -890,7 +880,7 @@ html {
 .gallery-toolbar-selection-count {
   font-size: 14px;
   font-weight: 500;
-  color: #444;
+  color: var(--vireon-ink-secondary);
   white-space: nowrap;
 }
 
@@ -900,13 +890,13 @@ html {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #111;
+  border: 1px solid var(--vireon-border);
+  background: var(--vireon-surface-elevated);
+  color: var(--vireon-ink);
 }
 
 .gallery-bulk-btn:hover:not(:disabled) {
-  background: #f8fafc;
+  background: var(--vireon-surface);
 }
 
 .gallery-bulk-btn:disabled {
@@ -915,14 +905,14 @@ html {
 }
 
 .gallery-bulk-btn--danger {
-  border-color: #b91c1c;
-  background: #b91c1c;
-  color: #fff;
+  border-color: var(--vireon-error);
+  background: var(--vireon-error);
+  color: var(--vireon-on-primary);
 }
 
 .gallery-bulk-btn--danger:hover:not(:disabled) {
-  background: #991b1b;
-  border-color: #991b1b;
+  background: var(--vireon-error-hover);
+  border-color: var(--vireon-error-hover);
 }
 
 .gallery-grid-img {

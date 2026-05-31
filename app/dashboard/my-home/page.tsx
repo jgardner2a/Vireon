@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
@@ -396,9 +397,7 @@ export default function MyHomePage() {
       </header>
 
       {displayError ? (
-        <p className="my-home-error" role="alert">
-          {displayError}
-        </p>
+        <DashboardAlert message={displayError} />
       ) : null}
 
       <div className="dashboard-split" style={MY_HOME_SPLIT_WORKSPACE}>
@@ -770,9 +769,7 @@ export default function MyHomePage() {
               </div>
 
               {displayError ? (
-                <p className="my-home-error" role="alert">
-                  {displayError}
-                </p>
+                <DashboardAlert message={displayError} />
               ) : null}
 
               <div className="my-home-modal-actions">

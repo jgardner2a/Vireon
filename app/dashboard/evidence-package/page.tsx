@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EvidencePackageSelection } from "@/app/dashboard/evidence-package/EvidencePackageSelection";
@@ -247,14 +248,12 @@ export default function EvidencePackagePage() {
 
       {exportEligibility && !exportEligibility.ok ? (
         <section
-          className="evidence-package-card evidence-package-card--notice"
+          className="dashboard-plan-notice-card"
           aria-label="Export availability"
         >
-          <p className="evidence-package-error" role="status">
-            {planExportBlockedMessage()}
-          </p>
-          <p className="evidence-package-preview-placeholder">{planUpgradeHint()}</p>
-          <ul className="evidence-package-preview-list">
+          <DashboardAlert message={planExportBlockedMessage()} />
+          <p className="dashboard-plan-notice-card__hint">{planUpgradeHint()}</p>
+          <ul className="dashboard-plan-notice-card__list">
             <li>Stay on Free and keep documenting evidence.</li>
             <li>
               Buy a one-time Evidence Package export ({EXPORT_ONE_TIME_PRICE_LABEL}).
@@ -263,7 +262,7 @@ export default function EvidencePackagePage() {
           </ul>
           <Link
             href={ROUTE_DASHBOARD_SETTINGS}
-            className="evidence-package-back-link"
+            className="dashboard-plan-notice-card__link"
           >
             View plan in Settings
           </Link>
@@ -313,9 +312,7 @@ export default function EvidencePackagePage() {
           {inventoryLoading ? (
             <p className="evidence-package-preview-placeholder">Loading evidence…</p>
           ) : inventoryError ? (
-            <p className="evidence-package-error" role="alert">
-              {inventoryError}
-            </p>
+            <DashboardAlert message={inventoryError} />
           ) : inventory && selection ? (
             <EvidencePackageSelection
               sections={inventory.sections}
@@ -377,9 +374,7 @@ export default function EvidencePackagePage() {
 
       <div className="evidence-package-actions">
         {exportError ? (
-          <p className="evidence-package-error" role="alert">
-            {exportError}
-          </p>
+          <DashboardAlert message={exportError} />
         ) : null}
         {generating && exportProgress ? (
           <p className="evidence-package-progress" aria-live="polite">

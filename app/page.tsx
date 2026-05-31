@@ -2,6 +2,7 @@ import {
   HomeFinalAuthActions,
   HomeHeroAuthActions,
 } from "@/app/components/PublicAuthLinks";
+import { HomeHeroGraphic } from "@/app/components/brand/HomeHeroGraphic";
 import "./home.css";
 
 export const metadata = {
@@ -95,21 +96,26 @@ export default function HomePage() {
     <div className="vireon-route-fill vireon-home">
       <div className="vireon-home__inner">
         <section className="vireon-home-hero" aria-labelledby="home-hero-title">
-          <p className="vireon-home-hero__eyebrow">Property documentation</p>
-          <h1 id="home-hero-title" className="vireon-home-hero__title">
-            Your home record, organized over time
-          </h1>
-          <p className="vireon-home-hero__lead">
-            Vireon helps residents document maintenance, communications, photos,
-            and files in one workspace—so you are prepared when questions come
-            up later.
-          </p>
-          <ul className="vireon-home-hero__points">
-            <li>Log issues and uploads as they happen</li>
-            <li>Keep photos and documents tied to your property</li>
-            <li>Export an Evidence Package when you need a shareable bundle</li>
-          </ul>
-          <HomeHeroAuthActions />
+          <div className="vireon-home-hero__grid">
+            <div className="vireon-home-hero__content">
+              <p className="vireon-home-hero__eyebrow">Property documentation</p>
+              <h1 id="home-hero-title" className="vireon-home-hero__title">
+                Your home record, organized over time
+              </h1>
+              <p className="vireon-home-hero__lead">
+                Vireon helps residents document maintenance, communications, photos,
+                and files in one workspace—so you are prepared when questions come
+                up later.
+              </p>
+              <ul className="vireon-home-hero__points">
+                <li>Log issues and uploads as they happen</li>
+                <li>Keep photos and documents tied to your property</li>
+                <li>Export an Evidence Package when you need a shareable bundle</li>
+              </ul>
+              <HomeHeroAuthActions />
+            </div>
+            <HomeHeroGraphic className="vireon-home-hero__graphic" />
+          </div>
         </section>
 
         <section

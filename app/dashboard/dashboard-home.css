@@ -34,9 +34,9 @@
 
   font-weight: 500;
 
-  color: #fff;
+  color: var(--vireon-on-primary);
 
-  background: #111;
+  background: var(--vireon-primary);
 
   border: none;
 
@@ -50,7 +50,7 @@
 
 .my-home-btn-primary:hover {
 
-  background: #333;
+  background: var(--vireon-primary-hover);
 
 }
 
@@ -76,7 +76,7 @@
 
   letter-spacing: 0.05em;
 
-  color: #666;
+  color: var(--vireon-ink-muted);
 
 }
 
@@ -86,11 +86,11 @@
 
   padding: 20px;
 
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
 
   border-radius: 12px;
 
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 
 }
 
@@ -102,7 +102,7 @@
 
   font-size: 14px;
 
-  color: #666;
+  color: var(--vireon-ink-muted);
 
   line-height: 1.5;
 
@@ -116,7 +116,7 @@
 
   font-size: 13px;
 
-  color: #b91c1c;
+  color: var(--vireon-error);
 
   line-height: 1.4;
 
@@ -142,7 +142,7 @@
 
   font-size: 14px;
 
-  color: #444;
+  color: var(--vireon-ink-secondary);
 
   line-height: 1.5;
 
@@ -204,11 +204,11 @@
 
   padding: 24px;
 
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
 
   border-radius: 12px;
 
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 
@@ -250,7 +250,7 @@
 
   font-weight: 500;
 
-  color: #333;
+  color: var(--vireon-ink-secondary);
 
 }
 
@@ -264,7 +264,7 @@
 
   font-size: 14px;
 
-  border: 1px solid #ddd;
+  border: 1px solid var(--vireon-border);
 
   border-radius: 8px;
 
@@ -298,7 +298,7 @@
 
   padding-top: 16px;
 
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--vireon-border-subtle);
 
 }
 
@@ -312,11 +312,11 @@
 
   font-weight: 500;
 
-  color: #333;
+  color: var(--vireon-ink-secondary);
 
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 
-  border: 1px solid #ddd;
+  border: 1px solid var(--vireon-border);
 
   border-radius: 8px;
 
@@ -328,7 +328,7 @@
 
 .my-home-btn-secondary:hover {
 
-  background: #f9fafb;
+  background: var(--vireon-surface);
 
 }
 

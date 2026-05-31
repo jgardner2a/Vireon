@@ -12,14 +12,14 @@
 
 .insights-card {
   padding: 20px;
-  border: 1px solid #eee;
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 12px;
-  background: #fff;
+  background: var(--vireon-surface-elevated);
 }
 
 .insights-placeholder {
   margin: 0;
   font-size: 14px;
-  color: #666;
+  color: var(--vireon-ink-muted);
   line-height: 1.5;
 }

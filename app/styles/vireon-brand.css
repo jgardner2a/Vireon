@@ -1,0 +1,85 @@
+/**
+ * Vireon brand tokens — Forest palette
+ * Property documentation: calm, trustworthy, resident-focused
+ */
+
+:root {
+  /* Core brand greens */
+  --vireon-forest: #185c47;
+  --vireon-forest-dark: #0f3d30;
+  --vireon-forest-mid: #247a5f;
+  --vireon-forest-light: #2f966f;
+  --vireon-sage: #3d9173;
+  --vireon-sage-muted: #d8ebe3;
+  --vireon-sage-subtle: #ecf5f0;
+
+  --vireon-leaf: #4aab83;
+  --vireon-leaf-hover: #3d9570;
+  --vireon-leaf-muted: #e0f2ea;
+
+  /* Neutrals (green-tinted stone) */
+  --vireon-ink: #152922;
+  --vireon-ink-secondary: #2d4039;
+  --vireon-ink-muted: #4f635b;
+  --vireon-ink-faint: #7a8f87;
+  --vireon-border: #c5d9d0;
+  --vireon-border-subtle: #dfeae5;
+  --vireon-surface: #f2f7f4;
+  --vireon-surface-alt: #e6f0eb;
+  --vireon-surface-elevated: #ffffff;
+
+  /* Semantic */
+  --vireon-primary: var(--vireon-forest);
+  --vireon-primary-hover: var(--vireon-forest-mid);
+  --vireon-accent: var(--vireon-leaf);
+  --vireon-accent-hover: var(--vireon-leaf-hover);
+
+  /* Pro tier */
+  --vireon-pro-bg: var(--vireon-leaf-muted);
+  --vireon-pro-border: #9dccba;
+  --vireon-pro-text: #155c45;
+
+  /* Status */
+  --vireon-error: #b91c1c;
+  --vireon-error-hover: #991b1b;
+  --vireon-error-bg: #fef2f2;
+  --vireon-error-border: #fecaca;
+  --vireon-success-text: #155c45;
+  --vireon-success-bg: #e8f4ee;
+  --vireon-warning-text: #7a5c20;
+  --vireon-warning-bg: #faf6eb;
+  --vireon-warning-border: #e8d9a8;
+
+  /* Plan limit notices — forest palette (calm upsell, not error red) */
+  --vireon-plan-limit-bg: var(--vireon-sage-subtle);
+  --vireon-plan-limit-border: var(--vireon-sage-muted);
+  --vireon-plan-limit-text: var(--vireon-ink-secondary);
+  --vireon-plan-limit-emphasis: var(--vireon-forest);
+
+  /* Text on brand fills */
+  --vireon-on-primary: #ffffff;
+
+  /* Typography */
+  --vireon-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+  /* Shape */
+  --vireon-radius-sm: 8px;
+  --vireon-radius-md: 10px;
+  --vireon-radius-lg: 14px;
+  --vireon-radius-xl: 16px;
+
+  /* Shadows */
+  --vireon-shadow-sm: 0 1px 2px rgba(21, 41, 34, 0.06);
+  --vireon-shadow-md: 0 4px 20px rgba(21, 41, 34, 0.1);
+  --vireon-shadow-brand: 0 12px 40px rgba(24, 92, 71, 0.14);
+
+  /* App shell */
+  --background: var(--vireon-surface-elevated);
+  --foreground: var(--vireon-ink);
+
+  /* Footer — neutral grey (subtle contrast from green-tinted surfaces) */
+  --vireon-footer-bg: #f0f1f3;
+  --vireon-footer-bar-bg: #e6e8eb;
+  --vireon-footer-border: #d8dce0;
+}

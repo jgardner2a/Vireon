@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardAlert } from "@/app/dashboard/_components/DashboardAlert";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -9,7 +10,6 @@ import {
   ROUTE_DASHBOARD_MY_HOME,
 } from "@/lib/appNavigation";
 import { planSupportsPropertyHistory } from "@/lib/billing/planConfig";
-import { PlanUsageHints } from "@/app/dashboard/_components/PlanUsageHints";
 import { useDashboardState } from "@/lib/dashboard/dashboardContext";
 import {
   getDashboardSnapshot,
@@ -184,12 +184,6 @@ export default function DashboardPage() {
   const currentHome = state?.currentHome ?? null;
   const previousHomes = homes.filter((home) => home.id !== currentHomeId);
   const showPropertyHistory = planSupportsPropertyHistory(state?.plan ?? "free");
-  const evidenceLogRefreshToken = metrics
-    ? metrics.maintenanceCount +
-      metrics.complexCount +
-      metrics.communicationsCount +
-      metrics.notesCount
-    : 0;
 
   useEffect(() => {
     const onFocus = () => {
@@ -267,9 +261,7 @@ export default function DashboardPage() {
             <h1 className="my-home-page-title">Dashboard</h1>
           </header>
           {dashboardError ? (
-            <p className="my-home-error" role="alert">
-              {dashboardError}
-            </p>
+            <DashboardAlert message={dashboardError} />
           ) : null}
           <section
             className="my-home-section"
@@ -320,12 +312,8 @@ export default function DashboardPage() {
       </header>
 
       {dashboardError ? (
-        <p className="my-home-error" role="alert">
-          {dashboardError}
-        </p>
+        <DashboardAlert message={dashboardError} />
       ) : null}
-
-      <PlanUsageHints variant="full" refreshToken={evidenceLogRefreshToken} />
 
       <section
         className="my-home-section"

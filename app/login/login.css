@@ -4,10 +4,9 @@
   flex: 1 1 auto;
   width: 100%;
   min-height: 100%;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
+  background: var(--vireon-surface);
+  color: var(--vireon-ink);
+  font-family: var(--vireon-font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -25,36 +24,18 @@
   box-sizing: border-box;
 }
 
-.vireon-auth-panel--signin {
-  background: #0f172a;
-  color: #f8fafc;
-}
-
+.vireon-auth-panel--signin,
 .vireon-auth-panel--signup {
-  background: linear-gradient(165deg, #eff6ff 0%, #f8fafc 48%, #f1f5f9 100%);
-  border-right: 1px solid #e2e8f0;
+  background: linear-gradient(
+    160deg,
+    var(--vireon-forest-dark) 0%,
+    var(--vireon-forest) 100%
+  );
+  color: var(--vireon-sage-muted);
 }
 
-.vireon-auth-panel__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
+.vireon-auth-panel__logo {
   margin-bottom: 28px;
-  font-size: 18px;
-  font-weight: 700;
-  border-radius: 12px;
-}
-
-.vireon-auth-panel--signin .vireon-auth-panel__mark {
-  color: #0f172a;
-  background: #f8fafc;
-}
-
-.vireon-auth-panel--signup .vireon-auth-panel__mark {
-  color: #fff;
-  background: #0f172a;
 }
 
 .vireon-auth-panel__eyebrow {
@@ -63,14 +44,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.vireon-auth-panel--signin .vireon-auth-panel__eyebrow {
-  color: #94a3b8;
-}
-
-.vireon-auth-panel--signup .vireon-auth-panel__eyebrow {
-  color: #64748b;
+  color: rgba(229, 239, 233, 0.72);
 }
 
 .vireon-auth-panel__title {
@@ -80,10 +54,7 @@
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.15;
-}
-
-.vireon-auth-panel--signin .vireon-auth-panel__title {
-  color: #fff;
+  color: var(--vireon-surface-elevated);
 }
 
 .vireon-auth-panel__lead {
@@ -91,14 +62,7 @@
   max-width: 34ch;
   font-size: 16px;
   line-height: 1.6;
-}
-
-.vireon-auth-panel--signin .vireon-auth-panel__lead {
-  color: #cbd5e1;
-}
-
-.vireon-auth-panel--signup .vireon-auth-panel__lead {
-  color: #475569;
+  color: rgba(229, 239, 233, 0.88);
 }
 
 .vireon-auth-panel__list {
@@ -116,14 +80,7 @@
   gap: 12px;
   font-size: 15px;
   line-height: 1.5;
-}
-
-.vireon-auth-panel--signin .vireon-auth-panel__list li {
-  color: #e2e8f0;
-}
-
-.vireon-auth-panel--signup .vireon-auth-panel__list li {
-  color: #334155;
+  color: rgba(229, 239, 233, 0.92);
 }
 
 .vireon-auth-panel__list-icon {
@@ -137,16 +94,8 @@
   font-size: 12px;
   font-weight: 700;
   border-radius: 999px;
-}
-
-.vireon-auth-panel--signin .vireon-auth-panel__list-icon {
-  color: #0f172a;
-  background: #f8fafc;
-}
-
-.vireon-auth-panel--signup .vireon-auth-panel__list-icon {
-  color: #fff;
-  background: #0f172a;
+  color: var(--vireon-forest-dark);
+  background: var(--vireon-sage-muted);
 }
 
 .vireon-auth-panel__steps {
@@ -163,10 +112,10 @@
   align-items: flex-start;
   gap: 14px;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .vireon-auth-panel__step-num {
@@ -178,8 +127,8 @@
   height: 28px;
   font-size: 13px;
   font-weight: 700;
-  color: #fff;
-  background: #0f172a;
+  color: var(--vireon-forest-dark);
+  background: var(--vireon-sage-muted);
   border-radius: 999px;
 }
 
@@ -188,13 +137,13 @@
   margin-bottom: 4px;
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--vireon-surface-elevated);
 }
 
 .vireon-auth-panel__step-body span {
   font-size: 13px;
   line-height: 1.45;
-  color: #64748b;
+  color: rgba(229, 239, 233, 0.78);
 }
 
 .vireon-auth-form-wrap {
@@ -210,8 +159,8 @@
   width: 100%;
   max-width: 400px;
   padding: 28px 28px 24px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 16px;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
@@ -224,7 +173,7 @@
   gap: 4px;
   margin-bottom: 28px;
   padding: 4px;
-  background: #f1f5f9;
+  background: var(--vireon-sage-subtle);
   border-radius: 12px;
 }
 
@@ -236,7 +185,7 @@
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
   text-decoration: none;
   background: transparent;
   border: none;
@@ -248,13 +197,13 @@
 }
 
 .vireon-auth-tabs__tab:hover {
-  color: #0f172a;
+  color: var(--vireon-forest);
 }
 
 .vireon-auth-tabs__tab--active {
-  color: #0f172a;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  color: var(--vireon-forest);
+  background: var(--vireon-surface-elevated);
+  box-shadow: var(--vireon-shadow-sm);
 }
 
 .vireon-auth-form__header {
@@ -266,14 +215,14 @@
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--vireon-ink);
 }
 
 .vireon-auth-form__subtitle {
   margin: 8px 0 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-auth-form {
@@ -291,7 +240,7 @@
 .vireon-auth-field__label {
   font-size: 13px;
   font-weight: 600;
-  color: #334155;
+  color: var(--vireon-ink-secondary);
 }
 
 .vireon-auth-field__input {
@@ -300,9 +249,9 @@
   padding: 12px 14px;
   font-size: 15px;
   font-family: inherit;
-  color: #0f172a;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  color: var(--vireon-ink);
+  background: var(--vireon-surface-elevated);
+  border: 1px solid var(--vireon-border-subtle);
   border-radius: 10px;
   outline: none;
   transition:
@@ -341,12 +290,12 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
   text-align: center;
 }
 
 .vireon-auth-legal a {
-  color: #0f172a;
+  color: var(--vireon-ink);
   font-weight: 500;
   text-decoration: none;
 }
@@ -361,17 +310,17 @@
   font-size: 15px;
   font-weight: 600;
   font-family: inherit;
-  color: #fff;
-  background: #0f172a;
-  border: 1px solid #0f172a;
-  border-radius: 10px;
+  color: var(--vireon-surface-elevated);
+  background: var(--vireon-primary);
+  border: 1px solid var(--vireon-primary);
+  border-radius: var(--vireon-radius-md);
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .vireon-auth-submit:hover:not(:disabled) {
-  background: #1e293b;
-  border-color: #1e293b;
+  background: var(--vireon-primary-hover);
+  border-color: var(--vireon-primary-hover);
 }
 
 .vireon-auth-submit:disabled {
@@ -383,12 +332,12 @@
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.5;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
   text-align: center;
 }
 
 .vireon-auth-switch a {
-  color: #0f172a;
+  color: var(--vireon-ink);
   font-weight: 600;
   text-decoration: none;
 }
@@ -401,12 +350,12 @@
   margin-top: 20px;
   font-size: 13px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
   text-decoration: none;
 }
 
 .vireon-auth-back:hover {
-  color: #0f172a;
+  color: var(--vireon-ink);
   text-decoration: underline;
 }
 
@@ -418,14 +367,14 @@
   gap: 12px;
   min-height: calc(100vh - var(--vireon-global-header-height));
   font-size: 14px;
-  color: #64748b;
+  color: var(--vireon-ink-muted);
 }
 
 .vireon-auth-loading__spinner {
   width: 28px;
   height: 28px;
-  border: 2px solid #e2e8f0;
-  border-top-color: #0f172a;
+  border: 2px solid var(--vireon-border-subtle);
+  border-top-color: var(--vireon-forest);
   border-radius: 999px;
   animation: vireon-auth-spin 0.7s linear infinite;
 }
@@ -453,12 +402,8 @@
     max-width: none;
   }
 
+  .vireon-auth-panel--signin,
   .vireon-auth-panel--signup {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .vireon-auth-panel--signin {
     order: 2;
     padding-top: 28px;
     padding-bottom: 40px;
